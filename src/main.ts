@@ -12,12 +12,12 @@ async function bootstrap() {
   // Configure CORS based on environment
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const allowAllOrigins = corsOriginsEnv === '*' || !corsOriginsEnv;
-  
+
   const allowedOrigins = corsOriginsEnv && corsOriginsEnv !== '*'
     ? corsOriginsEnv.split(',').map((origin) => origin.trim())
     : process.env.NODE_ENV === 'production'
-    ? [] // In production, will allow all if CORS_ORIGINS not set
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4200'];
+      ? [] // In production, will allow all if CORS_ORIGINS not set
+      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4200'];
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -87,6 +87,12 @@ async function bootstrap() {
     swaggerOptions: {
       persistAuthorization: true,
     },
+    customCssUrl:
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+    customJs: [
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js',
+    ],
   });
 
   const port = process.env.PORT ?? 3000;
