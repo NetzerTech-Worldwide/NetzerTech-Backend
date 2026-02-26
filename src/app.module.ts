@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AcademicModule } from './academic/academic.module';
 import { MailModule } from './mail/mail.module';
+import { ContactModule } from './contact/contact.module';
 import {
   User,
   Student,
@@ -160,6 +161,7 @@ import {
     DashboardModule,
     AcademicModule,
     MailModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [
