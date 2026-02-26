@@ -68,7 +68,7 @@ import {
       useFactory: (configService: ConfigService) => {
         // Support both connection string URL and individual parameters
         const dbUrl = configService.get<string>('DATABASE_URL') || configService.get<string>('DB_URL');
-        
+
         const commonConfig = {
           entities: [
             User,
@@ -110,12 +110,19 @@ import {
 
         // If connection string is provided, use it (preferred for Supabase)
         if (dbUrl) {
+          // If using Supabase Connection Pooler (port 6543), pgbouncer=true must be appended or passed
+          const isSupabasePooler = dbUrl.includes('supabase.com:6543') || dbUrl.includes('supabase.co:6543');
+
           return {
             type: 'postgres',
             url: dbUrl,
             ssl: configService.get('DB_SSL') !== 'false' ? {
               rejectUnauthorized: false, // Required for Supabase
             } : false,
+            // Required for Supabase pgBouncer/Supavisor Transaction Mode to prevent "Circuit breaker open" errors
+            extra: isSupabasePooler ? {
+              pgbouncer: true,
+            } : {},
             ...commonConfig,
           };
         }
@@ -163,4 +170,4 @@ import {
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
