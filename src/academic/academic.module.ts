@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AcademicController } from './academic.controller';
+import { ExaminationController } from './examination.controller';
 import { AcademicService } from './academic.service';
 import {
   User,
@@ -44,8 +45,8 @@ import {
       StudentAssignment,
     ]),
   ],
-  controllers: [AcademicController],
+  controllers: [AcademicController, ExaminationController],
   providers: [AcademicService],
   exports: [AcademicService],
 })
-export class AcademicModule {}
+export class AcademicModule { }

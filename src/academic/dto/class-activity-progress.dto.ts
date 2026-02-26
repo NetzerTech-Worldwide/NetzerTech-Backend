@@ -92,3 +92,38 @@ export class SubmitClassActivityDto {
   })
   answers: Record<string, string>;
 }
+
+export enum ClassActivityFilter {
+  ALL = 'all',
+  UPCOMING = 'upcoming',
+  PAST = 'past',
+}
+
+export class ClassActivityResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  subject: string;
+
+  @ApiProperty({ enum: ClassActivityStatus, nullable: true })
+  status: ClassActivityStatus | null;
+
+  @ApiProperty()
+  dueDate: Date;
+
+  @ApiProperty({ nullable: true })
+  description: string | null;
+
+  @ApiProperty()
+  totalPoints: number;
+
+  @ApiProperty({ nullable: true })
+  timeLimit: number | null;
+
+  @ApiProperty({ nullable: true })
+  score: number | null;
+}

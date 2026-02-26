@@ -14,7 +14,7 @@ import { AllSubjectsRoadmapDto, SubjectRoadmapDetailDto } from './dto/roadmap.dt
 import { CreateSubjectModuleDto, SubjectModuleResponseDto } from './dto/subject-module.dto';
 import { LiveSessionDto, LiveSessionDetailDto, ScheduleReminderDto } from './dto/live-session.dto';
 import { LiveSessionMessageDto, SendLiveSessionMessageDto } from './dto/live-session-message.dto';
-import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
+import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
 
 @ApiTags('Academic')
 @Controller('academic')
@@ -477,6 +477,27 @@ export class AcademicController {
     @Body() submitDto: SubmitAssignmentDto,
   ): Promise<SubmissionViewDto> {
     return this.academicService.submitAssignment(req.user.id, assignmentId, submitDto);
+  }
+
+  @Get('class-activities')
+  @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+  @ApiOperation({ summary: 'Get student class activities/examinations with filtering' })
+  @ApiQuery({
+    name: 'filter',
+    enum: ClassActivityFilter,
+    required: false,
+    description: 'Filter activities by their status (all, upcoming, or past)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Class activities retrieved successfully',
+    type: [ClassActivityResponseDto],
+  })
+  async getClassActivities(
+    @Request() req: AuthenticatedRequest,
+    @Query('filter') filter: ClassActivityFilter = ClassActivityFilter.ALL,
+  ): Promise<ClassActivityResponseDto[]> {
+    return this.academicService.getClassActivities(req.user.id, filter);
   }
 }
 

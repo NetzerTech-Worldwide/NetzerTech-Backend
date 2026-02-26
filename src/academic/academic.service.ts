@@ -15,7 +15,7 @@ import { Reminder } from '../entities/reminder.entity';
 import { LiveSessionMessage } from '../entities/live-session-message.entity';
 import { LiveSessionMessageDto, SendLiveSessionMessageDto } from './dto/live-session-message.dto';
 import { ClassActivity, Question, StudentClassActivity, ClassActivityStatus, LearningMaterial, LectureNote, LectureNoteSection, Assignment, StudentAssignment, AssignmentStatus } from '../entities';
-import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
+import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
 
 @Injectable()
 export class AcademicService {
@@ -709,7 +709,7 @@ export class AcademicService {
   }
 
   async scheduleSessionReminder(userId: string, sessionId: string, minutesBefore: number = 15): Promise<{ message: string }> {
-     const user = await this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id: userId },
     });
 
@@ -727,7 +727,7 @@ export class AcademicService {
     }
 
     if (new Date() > session.endTime) {
-       throw new BadRequestException('Cannot set reminder for a past session');
+      throw new BadRequestException('Cannot set reminder for a past session');
     }
 
     // Check for existing reminder for this session
@@ -743,7 +743,7 @@ export class AcademicService {
     });
 
     if (existingReminder) {
-        throw new BadRequestException('Reminder already set for this session');
+      throw new BadRequestException('Reminder already set for this session');
     }
 
     const reminderTime = new Date(session.startTime.getTime() - minutesBefore * 60000);
@@ -784,7 +784,7 @@ export class AcademicService {
     const isTeacher = session.class.teacher?.id === user.teacher?.id;
     // For now assuming if they can access the endpoint they are somewhat authorized, 
     // but proper check would be: if student -> ensure registered or in participants. if teacher -> ensure owns class.
-    
+
     // Create message
     const message = this.messageRepository.create({
       content: sendDto.content,
@@ -1428,7 +1428,7 @@ export class AcademicService {
     submission.submissionText = submitDto.text;
     submission.submissionUrl = submitDto.attachmentUrl ?? null;
     submission.status = AssignmentStatus.DRAFT;
-    
+
     const savedSubmission = await this.submissionRepository.save(submission);
 
     return {
@@ -1490,7 +1490,7 @@ export class AcademicService {
     submission.submissionUrl = submitDto.attachmentUrl ?? null;
     submission.status = AssignmentStatus.SUBMITTED;
     submission.submittedAt = new Date();
-    
+
     const savedSubmission = await this.submissionRepository.save(submission);
 
     return {
@@ -1503,6 +1503,78 @@ export class AcademicService {
       grade: savedSubmission.grade ? Number(savedSubmission.grade) : null,
       feedback: savedSubmission.feedback,
     };
+  }
+
+  async getClassActivities(userId: string, filter: ClassActivityFilter): Promise<ClassActivityResponseDto[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['student'],
+    });
+
+    if (!user || !user.student) {
+      throw new NotFoundException('Student profile not found');
+    }
+    const studentId = user.student.id;
+
+    // Get all registrations for the student
+    const registrations = await this.registrationRepository.find({
+      where: { student: { id: studentId } },
+      relations: ['class'],
+    });
+
+    const classIds = registrations.map(reg => reg.class.id);
+
+    if (classIds.length === 0) {
+      return [];
+    }
+
+    // Build the query to get all activities mapped to these classes
+    const query = this.classActivityRepository
+      .createQueryBuilder('activity')
+      .leftJoinAndSelect('activity.class', 'class')
+      .leftJoinAndSelect('activity.submissions', 'submission', 'submission.student.id = :studentId', { studentId })
+      .where('class.id IN (:...classIds)', { classIds });
+
+    const now = new Date();
+
+    if (filter === ClassActivityFilter.UPCOMING) {
+      query.andWhere('activity.dueDate > :now', { now });
+      query.andWhere(
+        '(submission.id IS NULL OR (submission.status != :submittedStatus AND submission.status != :gradedStatus))',
+        {
+          submittedStatus: ClassActivityStatus.SUBMITTED,
+          gradedStatus: ClassActivityStatus.GRADED
+        }
+      );
+    } else if (filter === ClassActivityFilter.PAST) {
+      query.andWhere(
+        '(activity.dueDate <= :now OR submission.status = :submittedStatus OR submission.status = :gradedStatus)',
+        {
+          now,
+          submittedStatus: ClassActivityStatus.SUBMITTED,
+          gradedStatus: ClassActivityStatus.GRADED
+        }
+      );
+    }
+
+    query.orderBy('activity.dueDate', 'ASC');
+
+    const activities = await query.getMany();
+
+    return activities.map(activity => {
+      const submission = activity.submissions && activity.submissions.length > 0 ? activity.submissions[0] : null;
+      return {
+        id: activity.id,
+        title: activity.title,
+        subject: activity.subject,
+        status: submission ? submission.status : null,
+        dueDate: activity.dueDate,
+        description: activity.description,
+        totalPoints: activity.totalPoints,
+        timeLimit: activity.timeLimit,
+        score: submission ? submission.score : null
+      };
+    });
   }
 }
 
