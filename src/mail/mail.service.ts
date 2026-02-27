@@ -24,7 +24,7 @@ export class MailService {
         return { success: true, data: { id: 'mock_email_id' } };
       }
 
-      const from = this.configService.get<string>('EMAIL_FROM') || 'onboarding@resend.dev';
+      const from = this.configService.get<string>('RESEND_FROM_EMAIL') || this.configService.get<string>('EMAIL_FROM') || 'onboarding@resend.dev';
 
       const { data, error } = await this.resend.emails.send({
         from,
