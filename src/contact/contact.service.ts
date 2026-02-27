@@ -4,15 +4,15 @@ import { ContactFormDto } from './dto/contact.dto';
 
 @Injectable()
 export class ContactService {
-    private readonly logger = new Logger(ContactService.name);
-    private readonly adminEmail = 'admin@netzertech.co';
+  private readonly logger = new Logger(ContactService.name);
+  private readonly adminEmail = 'admin@netzertech.co';
 
-    constructor(private readonly mailService: MailService) { }
+  constructor(private readonly mailService: MailService) { }
 
-    async submitContactForm(dto: ContactFormDto): Promise<{ message: string; success: boolean }> {
-        try {
-            const subject = `New Contact Inquiry: ${dto.subject}`;
-            const html = `
+  async submitContactForm(dto: ContactFormDto): Promise<{ message: string; success: boolean }> {
+    try {
+      const subject = `New Contact Inquiry: ${dto.category}`;
+      const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
           <h2 style="color: #333; text-align: center;">New Contact Request</h2>
           <p>You have received a new message from the NetzerTech public website.</p>
@@ -27,8 +27,12 @@ export class ContactService {
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${dto.email}">${dto.email}</a></td>
             </tr>
             <tr>
-              <th style="padding: 10px; border-bottom: 1px solid #eee;">Subject</th>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.subject}</td>
+              <th style="padding: 10px; border-bottom: 1px solid #eee;">Category</th>
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.category}</td>
+            </tr>
+            <tr>
+              <th style="padding: 10px; border-bottom: 1px solid #eee;">School Name</th>
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.schoolName || 'N/A'}</td>
             </tr>
           </table>
           <h3 style="margin-top: 20px;">Message:</h3>
@@ -40,18 +44,18 @@ export class ContactService {
         </div>
       `;
 
-            // We send this to the admin email, with the reply-to header technically implied by the content
-            await this.mailService.sendMail(this.adminEmail, subject, html);
+      // We send this to the admin email, with the reply-to header technically implied by the content
+      await this.mailService.sendMail(this.adminEmail, subject, html);
 
-            this.logger.log(`Processed contact form submission from ${dto.email}`);
+      this.logger.log(`Processed contact form submission from ${dto.email}`);
 
-            return {
-                message: 'Your message has been sent successfully. We will get back to you shortly.',
-                success: true,
-            };
-        } catch (error) {
-            this.logger.error('Failed to process contact form', error);
-            throw new InternalServerErrorException('Failed to send contact message at this time.');
-        }
+      return {
+        message: 'Your message has been sent successfully. We will get back to you shortly.',
+        success: true,
+      };
+    } catch (error) {
+      this.logger.error('Failed to process contact form', error);
+      throw new InternalServerErrorException('Failed to send contact message at this time.');
     }
+  }
 }
