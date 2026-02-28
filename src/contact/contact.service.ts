@@ -11,7 +11,7 @@ export class ContactService {
 
   async submitContactForm(dto: ContactFormDto): Promise<{ message: string; success: boolean }> {
     try {
-      const subject = `New Contact Inquiry: ${dto.category}`;
+      const subject = `New Contact Inquiry from ${dto.firstName} ${dto.lastName}`;
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
           <h2 style="color: #333; text-align: center;">New Contact Request</h2>
@@ -20,19 +20,15 @@ export class ContactService {
           <table style="width: 100%; text-align: left; border-collapse: collapse;">
             <tr>
               <th style="padding: 10px; border-bottom: 1px solid #eee; width: 30%;">Full Name</th>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.fullName}</td>
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.firstName} ${dto.lastName}</td>
             </tr>
             <tr>
               <th style="padding: 10px; border-bottom: 1px solid #eee;">Email Address</th>
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${dto.email}">${dto.email}</a></td>
             </tr>
             <tr>
-              <th style="padding: 10px; border-bottom: 1px solid #eee;">Category</th>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.category}</td>
-            </tr>
-            <tr>
-              <th style="padding: 10px; border-bottom: 1px solid #eee;">School Name</th>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.schoolName || 'N/A'}</td>
+              <th style="padding: 10px; border-bottom: 1px solid #eee;">Phone Number</th>
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">${dto.phoneNumber}</td>
             </tr>
           </table>
           <h3 style="margin-top: 20px;">Message:</h3>

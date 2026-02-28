@@ -2,28 +2,28 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, MaxLength, IsOptional } from 'class-validator';
 
 export class ContactFormDto {
-    @ApiProperty({ description: 'The category or reason for contacting', example: 'For School' })
+    @ApiProperty({ description: 'The first name of the sender', example: 'John' })
     @IsString()
     @IsNotEmpty()
-    @MaxLength(100)
-    category: string;
+    @MaxLength(50)
+    firstName: string;
 
-    @ApiProperty({ description: 'The full name of the sender', example: 'John Doe' })
+    @ApiProperty({ description: 'The last name of the sender', example: 'Doe' })
     @IsString()
     @IsNotEmpty()
-    @MaxLength(100)
-    fullName: string;
+    @MaxLength(50)
+    lastName: string;
 
     @ApiProperty({ description: 'The email address to reply to', example: 'john@example.com' })
     @IsEmail()
     @IsNotEmpty()
     email: string;
 
-    @ApiProperty({ description: 'The name of the school (optional)', example: 'Springfield High', required: false })
+    @ApiProperty({ description: 'The phone number of the sender', example: '+1234567890' })
     @IsString()
-    @IsOptional()
-    @MaxLength(200)
-    schoolName?: string;
+    @IsNotEmpty()
+    @MaxLength(20)
+    phoneNumber: string;
 
     @ApiProperty({ description: 'The full message content', example: 'I would like to learn more about the university tier features.' })
     @IsString()
