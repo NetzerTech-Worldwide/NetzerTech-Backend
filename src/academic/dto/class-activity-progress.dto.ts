@@ -127,3 +127,28 @@ export class ClassActivityResponseDto {
   @ApiProperty({ nullable: true })
   score: number | null;
 }
+
+export class SaveClassActivityProgressDto {
+  @ApiProperty({ description: 'The question ID being answered', example: 'uuid' })
+  questionId: string;
+
+  @ApiProperty({ description: 'The selected answer option', example: 'Option A' })
+  answer: string;
+}
+
+export class ClassActivityResultAnalysisDto {
+  @ApiProperty({ description: 'Total score achieved percentage', example: 85 })
+  score: number;
+
+  @ApiProperty({ description: 'Total number of questions in the activity', example: 50 })
+  totalQuestions: number;
+
+  @ApiProperty({ description: 'Number of correctly answered questions', example: 42 })
+  correctAnswers: number;
+
+  @ApiProperty({ description: 'Number of incorrectly answered questions', example: 5 })
+  incorrectAnswers: number;
+
+  @ApiProperty({ description: 'Number of skipped or unanswered questions', example: 3 })
+  skippedAnswers: number;
+}

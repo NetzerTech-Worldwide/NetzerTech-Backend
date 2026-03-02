@@ -15,7 +15,7 @@ import { Reminder } from '../entities/reminder.entity';
 import { LiveSessionMessage } from '../entities/live-session-message.entity';
 import { LiveSessionMessageDto, SendLiveSessionMessageDto } from './dto/live-session-message.dto';
 import { ClassActivity, Question, StudentClassActivity, ClassActivityStatus, LearningMaterial, LectureNote, LectureNoteSection, Assignment, StudentAssignment, AssignmentStatus } from '../entities';
-import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
+import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, SaveClassActivityProgressDto, ClassActivityResultAnalysisDto, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
 
 @Injectable()
 export class AcademicService {
@@ -1576,5 +1576,105 @@ export class AcademicService {
       };
     });
   }
-}
 
+  async saveClassActivityProgress(userId: string, activityId: string, dto: SaveClassActivityProgressDto): Promise<{ success: boolean }> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['student'],
+    });
+
+    if (!user || !user.student) {
+      throw new NotFoundException('Student profile not found');
+    }
+
+    let submission = await this.studentClassActivityRepository.findOne({
+      where: {
+        student: { id: user.student.id },
+        classActivity: { id: activityId },
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Activity session not started');
+    }
+    if (submission.status === ClassActivityStatus.SUBMITTED || submission.status === ClassActivityStatus.GRADED) {
+      throw new BadRequestException('Cannot save progress for an already submitted activity');
+    }
+
+    // Upsert the specific question answer into the JSON block
+    submission.answers = {
+      ...(submission.answers || {}),
+      [dto.questionId]: dto.answer,
+    };
+
+    // Ensure status is IN_PROGRESS while saving progress
+    submission.status = ClassActivityStatus.IN_PROGRESS;
+
+    await this.studentClassActivityRepository.save(submission);
+
+    return { success: true };
+  }
+
+  async getClassActivityResult(userId: string, activityId: string): Promise<ClassActivityResultAnalysisDto> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['student'],
+    });
+
+    if (!user || !user.student) {
+      throw new NotFoundException('Student profile not found');
+    }
+
+    const submission = await this.studentClassActivityRepository.findOne({
+      where: {
+        student: { id: user.student.id },
+        classActivity: { id: activityId },
+      },
+      relations: ['classActivity', 'classActivity.questions'],
+    });
+
+    if (!submission) {
+      throw new NotFoundException('No submission found for this activity');
+    }
+
+    // If you strictly want them to only see results AFTER submission
+    // if (submission.status !== ClassActivityStatus.SUBMITTED && submission.status !== ClassActivityStatus.GRADED) {
+    //   throw new BadRequestException('Activity has not been submitted yet');
+    // }
+
+    const questions = submission.classActivity.questions || [];
+    const answers = submission.answers || {};
+
+    let correctAnswers = 0;
+    let incorrectAnswers = 0;
+    let skippedAnswers = 0;
+
+    for (const question of questions) {
+      const studentAnswer = answers[question.id];
+      if (!studentAnswer) {
+        skippedAnswers++;
+        continue;
+      }
+
+      // Compare case-insensitive string match or array checks based on how Question type stores correct output.
+      // E.g 'Option A', 'True', etc
+      const isCorrect = question.correctAnswers && question.correctAnswers.some(ans => ans.toLowerCase() === studentAnswer.toLowerCase());
+      if (isCorrect) {
+        correctAnswers++;
+      } else {
+        incorrectAnswers++;
+      }
+    }
+
+    // Default to submission score if pre-calculated, else dynamically use total matched
+    const score = submission.score !== undefined && submission.score !== null ? Number(submission.score) : correctAnswers;
+
+    return {
+      score,
+      totalQuestions: questions.length,
+      correctAnswers,
+      incorrectAnswers,
+      skippedAnswers,
+    };
+  }
+}

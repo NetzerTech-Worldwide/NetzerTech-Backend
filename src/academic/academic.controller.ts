@@ -14,7 +14,7 @@ import { AllSubjectsRoadmapDto, SubjectRoadmapDetailDto } from './dto/roadmap.dt
 import { CreateSubjectModuleDto, SubjectModuleResponseDto } from './dto/subject-module.dto';
 import { LiveSessionDto, LiveSessionDetailDto, ScheduleReminderDto } from './dto/live-session.dto';
 import { LiveSessionMessageDto, SendLiveSessionMessageDto } from './dto/live-session-message.dto';
-import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
+import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, SaveClassActivityProgressDto, ClassActivityResultAnalysisDto, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
 
 @ApiTags('Academic')
 @Controller('academic')
@@ -498,6 +498,37 @@ export class AcademicController {
     @Query('filter') filter: ClassActivityFilter = ClassActivityFilter.ALL,
   ): Promise<ClassActivityResponseDto[]> {
     return this.academicService.getClassActivities(req.user.id, filter);
+  }
+
+  @Post('class-activities/:id/save-progress')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+  @ApiOperation({ summary: 'Auto-save student progress for an active Class Activity / CBT' })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity progress saved successfully',
+  })
+  async saveClassActivityProgress(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') activityId: string,
+    @Body() progressDto: SaveClassActivityProgressDto,
+  ): Promise<{ success: boolean }> {
+    return this.academicService.saveClassActivityProgress(req.user.id, activityId, progressDto);
+  }
+
+  @Get('class-activities/:id/result')
+  @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+  @ApiOperation({ summary: 'Get detailed examination result analytics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Detailed analytics retrieved successfully',
+    type: ClassActivityResultAnalysisDto,
+  })
+  async getClassActivityResult(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') activityId: string,
+  ): Promise<ClassActivityResultAnalysisDto> {
+    return this.academicService.getClassActivityResult(req.user.id, activityId);
   }
 }
 

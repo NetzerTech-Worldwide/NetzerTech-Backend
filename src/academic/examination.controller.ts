@@ -12,7 +12,9 @@ import {
     ClassActivityDetailDto,
     SubmitClassActivityDto,
     ClassActivityResponseDto,
-    ClassActivityFilter
+    ClassActivityFilter,
+    SaveClassActivityProgressDto,
+    ClassActivityResultAnalysisDto
 } from './dto';
 
 @ApiTags('Examination')
@@ -104,5 +106,36 @@ export class ExaminationController {
         @Body() submitDto: SubmitClassActivityDto,
     ): Promise<{ message: string; score: number }> {
         return this.academicService.submitClassActivity(req.user.id, examinationId, submitDto);
+    }
+
+    @Post(':id/save-progress')
+    @HttpCode(HttpStatus.OK)
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Auto-save student progress for an active examination' })
+    @ApiResponse({
+        status: 200,
+        description: 'Examination progress saved successfully',
+    })
+    async saveExaminationProgress(
+        @Request() req: AuthenticatedRequest,
+        @Param('id') examinationId: string,
+        @Body() progressDto: SaveClassActivityProgressDto,
+    ): Promise<{ success: boolean }> {
+        return this.academicService.saveClassActivityProgress(req.user.id, examinationId, progressDto);
+    }
+
+    @Get(':id/result')
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Get detailed examination result analytics' })
+    @ApiResponse({
+        status: 200,
+        description: 'Detailed analytics retrieved successfully',
+        type: ClassActivityResultAnalysisDto,
+    })
+    async getExaminationResult(
+        @Request() req: AuthenticatedRequest,
+        @Param('id') examinationId: string,
+    ): Promise<ClassActivityResultAnalysisDto> {
+        return this.academicService.getClassActivityResult(req.user.id, examinationId);
     }
 }
