@@ -14,6 +14,13 @@ export class StartClassActivityResponseDto {
 
   @ApiProperty({ enum: ClassActivityStatus })
   status: ClassActivityStatus;
+
+  @ApiProperty({
+    description: 'Map of question IDs to student answers (only populated when resuming an IN_PROGRESS attempt)',
+    example: { 'q-uuid-1': 'Option A' },
+    required: false
+  })
+  answers?: Record<string, string>;
 }
 
 export class QuestionDto {

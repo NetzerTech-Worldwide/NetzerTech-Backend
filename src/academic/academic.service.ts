@@ -887,6 +887,7 @@ export class AcademicService {
         attemptId: studentClassActivity.id,
         startTime: studentClassActivity.startedAt || new Date(),
         status: studentClassActivity.status,
+        answers: studentClassActivity.answers || {},
       };
     }
 
