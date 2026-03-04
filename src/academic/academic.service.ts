@@ -1658,8 +1658,7 @@ export class AcademicService {
       }
 
       // Compare case-insensitive string match or array checks based on how Question type stores correct output.
-      // E.g 'Option A', 'True', etc
-      const isCorrect = question.correctAnswers && question.correctAnswers.some(ans => ans.toLowerCase() === studentAnswer.toLowerCase());
+      const isCorrect = question.correctAnswer && question.correctAnswer.toLowerCase() === studentAnswer.toLowerCase();
       if (isCorrect) {
         correctAnswers++;
       } else {

@@ -11,6 +11,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { AcademicModule } from './academic/academic.module';
 import { MailModule } from './mail/mail.module';
 import { ContactModule } from './contact/contact.module';
+import { RecordsModule } from './records/records.module';
 import {
   User,
   Student,
@@ -162,6 +163,7 @@ import {
     AcademicModule,
     MailModule,
     ContactModule,
+    RecordsModule,
   ],
   controllers: [AppController],
   providers: [
