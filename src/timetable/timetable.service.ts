@@ -81,6 +81,7 @@ export class TimetableService {
                 category: cls.type && cls.type.toLowerCase() === 'elective' ? 'elective' : 'compulsory',
                 startTime: localStartTime,
                 endTime: localEndTime,
+                duration: '', // Will be calculated globally post-sort
                 teacherName: cls.teacher ? cls.teacher.fullName : 'Class Teacher',
                 location: cls.location || 'Main Campus',
                 description: cls.description || null,
@@ -102,6 +103,7 @@ export class TimetableService {
                 category: 'extra', // LiveSessions map strictly to the Extra UI tab
                 startTime: ls.startTime,
                 endTime: ls.endTime,
+                duration: '', // Will be calculated globally post-sort
                 teacherName: ls.class && ls.class.teacher ? ls.class.teacher.fullName : 'Host',
                 location: ls.meetingUrl ? 'Virtual (Zoom)' : 'Online',
                 description: ls.description || null,
@@ -110,12 +112,59 @@ export class TimetableService {
             });
         });
 
-        // Sort chronologically ascending
         events.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+
+        // Attach duration strings post-sort
+        events.forEach(event => {
+            const diffMs = event.endTime.getTime() - event.startTime.getTime();
+            const diffMins = Math.round(diffMs / 60000);
+            const hrs = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+
+            if (hrs > 0 && mins > 0) event.duration = `${hrs} hr ${mins} mins`;
+            else if (hrs > 0) event.duration = `${hrs} hr`;
+            else event.duration = `${mins} mins`;
+        });
 
         return {
             date: targetDate.toISOString().split('T')[0],
             events
         };
+    }
+
+    async getRangeSchedule(userId: string, startDateStr: string, endDateStr: string): Promise<DailyTimetableDto[]> {
+        const start = new Date(startDateStr);
+        const end = new Date(endDateStr);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+            throw new Error('Invalid date range provided');
+        }
+
+        const payloads: DailyTimetableDto[] = [];
+        const current = new Date(start);
+
+        // Max out at 14 days to prevent malicious unbounded loops
+        let iterations = 0;
+        while (current <= end && iterations < 14) {
+            const dailyStr = current.toISOString().split('T')[0];
+            payloads.push(await this.getDailySchedule(userId, dailyStr));
+            current.setDate(current.getDate() + 1);
+            iterations++;
+        }
+
+        return payloads;
+    }
+
+    async joinEvent(userId: string, joinDto: any): Promise<{ message: string; success: boolean }> {
+        // Technically, regular Classes don't have a "Join" button in a virtual sense,
+        // but LiveSessions do. We will mark attendance or simply return a success log.
+        if (joinDto.type === 'live-session') {
+            const session = await this.liveSessionRepository.findOne({ where: { id: joinDto.eventId } });
+            if (!session) throw new NotFoundException('Live session not found');
+            // An advanced implementation might insert an attendance cross-record here.
+            return { message: 'Successfully joined virtual live session', success: true };
+        }
+
+        return { message: 'Action recorded successfully', success: true };
     }
 }

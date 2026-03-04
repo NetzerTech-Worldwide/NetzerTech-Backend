@@ -19,6 +19,9 @@ export class TimetableEventDto {
     @ApiProperty({ description: 'End time of the event' })
     endTime: Date;
 
+    @ApiProperty({ description: 'Pre-formatted relative duration', example: '1 hr 20 mins' })
+    duration: string;
+
     @ApiProperty({ description: 'Name of the assigned instructor' })
     teacherName: string;
 
@@ -41,4 +44,12 @@ export class DailyTimetableDto {
 
     @ApiProperty({ type: [TimetableEventDto], description: 'Chronologically sorted list of events for the day' })
     events: TimetableEventDto[];
+}
+
+export class TimetableJoinDto {
+    @ApiProperty({ description: 'The ID of the Class or LiveSession to join or log attendance for' })
+    eventId: string;
+
+    @ApiProperty({ description: 'The type of the event getting joined' })
+    type: 'class' | 'live-session';
 }
