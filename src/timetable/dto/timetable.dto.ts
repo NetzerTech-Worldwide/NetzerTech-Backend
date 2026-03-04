@@ -10,6 +10,9 @@ export class TimetableEventDto {
     @ApiProperty({ description: 'Event type', example: 'class' })
     type: 'class' | 'live-session';
 
+    @ApiProperty({ description: 'Category for UI filtering', example: 'compulsory' })
+    category: 'compulsory' | 'elective' | 'extra';
+
     @ApiProperty({ description: 'Start time of the event' })
     startTime: Date;
 

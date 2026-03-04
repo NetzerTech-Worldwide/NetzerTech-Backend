@@ -78,6 +78,7 @@ export class TimetableService {
                 id: cls.id,
                 title: cls.subject || cls.title,
                 type: 'class',
+                category: cls.type && cls.type.toLowerCase() === 'elective' ? 'elective' : 'compulsory',
                 startTime: localStartTime,
                 endTime: localEndTime,
                 teacherName: cls.teacher ? cls.teacher.fullName : 'Class Teacher',
@@ -98,6 +99,7 @@ export class TimetableService {
                 id: ls.id,
                 title: ls.title || (ls.class ? ls.class.subject : 'Virtual Session'),
                 type: 'live-session',
+                category: 'extra', // LiveSessions map strictly to the Extra UI tab
                 startTime: ls.startTime,
                 endTime: ls.endTime,
                 teacherName: ls.class && ls.class.teacher ? ls.class.teacher.fullName : 'Host',
