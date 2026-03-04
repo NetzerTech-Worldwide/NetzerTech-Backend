@@ -63,6 +63,12 @@ export class ReportCardDto {
 
     @ApiProperty({ type: [SubjectRecordDto] })
     subjects: SubjectRecordDto[];
+
+    @ApiProperty()
+    teacherRemark: string;
+
+    @ApiProperty()
+    principalRemark: string;
 }
 
 export class TermDto {

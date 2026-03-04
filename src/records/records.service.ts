@@ -123,6 +123,12 @@ export class RecordsService {
                 attendancePercentage: 92, // Mocked overall attendance logic
             },
             subjects: subjectsArray,
+            teacherRemark: averageScore >= 75 ? 'An outstanding performance this term. Keep it up!' :
+                averageScore >= 50 ? 'A good effort, but there is room for improvement.' :
+                    'Needs urgent attention and more dedication to studies.',
+            principalRemark: averageScore >= 75 ? 'Excellent result. Promoted to the next class.' :
+                averageScore >= 50 ? 'Passed. Promoted.' :
+                    'Failed. Advised to repeat.',
         };
     }
 
