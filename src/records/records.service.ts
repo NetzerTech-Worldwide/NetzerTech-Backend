@@ -126,9 +126,11 @@ export class RecordsService {
             teacherRemark: averageScore >= 75 ? 'An outstanding performance this term. Keep it up!' :
                 averageScore >= 50 ? 'A good effort, but there is room for improvement.' :
                     'Needs urgent attention and more dedication to studies.',
+            teacherName: user.student.classes?.length > 0 && user.student.classes[0].teacher ? user.student.classes[0].teacher.fullName : 'Class Teacher',
             principalRemark: averageScore >= 75 ? 'Excellent result. Promoted to the next class.' :
                 averageScore >= 50 ? 'Passed. Promoted.' :
                     'Failed. Advised to repeat.',
+            principalName: 'Admin',
         };
     }
 

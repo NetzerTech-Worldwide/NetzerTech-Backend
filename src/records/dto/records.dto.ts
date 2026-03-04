@@ -68,7 +68,13 @@ export class ReportCardDto {
     teacherRemark: string;
 
     @ApiProperty()
+    teacherName: string;
+
+    @ApiProperty()
     principalRemark: string;
+
+    @ApiProperty()
+    principalName: string;
 }
 
 export class TermDto {
