@@ -1,10 +1,10 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { User, Student, Parent, Teacher, Admin, AcademicProgress } from '../entities';
+import { User, Student, Parent, Teacher, Admin, AcademicProgress, Class, Assignment, StudentAssignment, ClassActivity, StudentClassActivity, Question, ClassActivityStatus, AssignmentStatus } from '../entities';
 import { UserRole } from '../common/enums/user-role.enum';
 
 export class DatabaseSeeder {
-  constructor(private dataSource: DataSource) {}
+  constructor(private dataSource: DataSource) { }
 
   async seed() {
     console.log('Starting database seeding...');
@@ -12,20 +12,20 @@ export class DatabaseSeeder {
 
     // Create admin user
     await this.createAdmin();
-    
+
     // Create teacher user
     await this.createTeacher();
-    
+
     // Create parent
     const parent = await this.createParent();
-    
+
     if (!parent) {
       throw new Error('Failed to create or find parent user');
     }
-    
+
     // Create secondary student
     await this.createSecondaryStudent(parent);
-    
+
     // Create university student
     await this.createUniversityStudent();
 
@@ -63,7 +63,7 @@ export class DatabaseSeeder {
 
     if (!existingAdmin) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      
+
       const user = userRepository.create({
         email: 'admin@netzertech.com',
         password: hashedPassword,
@@ -106,7 +106,7 @@ export class DatabaseSeeder {
 
     if (!existingTeacher) {
       const hashedPassword = await bcrypt.hash('teacher123', 10);
-      
+
       const user = userRepository.create({
         email: 'teacher@netzertech.com',
         password: hashedPassword,
@@ -148,7 +148,7 @@ export class DatabaseSeeder {
 
     if (!existingParent) {
       const hashedPassword = await bcrypt.hash('parent123', 10);
-      
+
       const user = userRepository.create({
         email: 'parent@example.com',
         password: hashedPassword,
@@ -170,14 +170,14 @@ export class DatabaseSeeder {
       console.log('✓ Parent user created: parent@example.com');
       return savedParent;
     }
-    
+
     // Update password for existing parent
     const hashedPassword = await bcrypt.hash('parent123', 10);
     existingParent.password = hashedPassword;
     existingParent.isActive = true;
     await userRepository.save(existingParent);
     console.log('✓ Parent user password updated: parent@example.com');
-    
+
     return await parentRepository.findOne({
       where: { user: { email: 'parent@example.com' } },
       relations: ['user'],
@@ -196,7 +196,7 @@ export class DatabaseSeeder {
 
     if (!existingStudent) {
       const hashedPassword = await bcrypt.hash('student123', 10);
-      
+
       const studentUser = userRepository.create({
         email: 'student@example.com',
         password: hashedPassword,
@@ -236,6 +236,172 @@ export class DatabaseSeeder {
 
       await academicProgressRepository.save(academicProgress);
       console.log('✓ Secondary Student created: STU001 (Alice Student)');
+
+      // -- 🚀 ADD REPORT CARD SEEDING HISTORY --
+      const teacherRepository = this.dataSource.getRepository(Teacher);
+      const classRepository = this.dataSource.getRepository(Class);
+      const assignmentRepository = this.dataSource.getRepository(Assignment);
+      const studentAssignmentRepository = this.dataSource.getRepository(StudentAssignment);
+      const classActivityRepository = this.dataSource.getRepository(ClassActivity);
+      const studentClassActivityRepository = this.dataSource.getRepository(StudentClassActivity);
+
+      const teacher = await teacherRepository.findOne({ where: { employeeId: 'TCH001' } });
+
+      if (teacher) {
+        // 1. Create Mock Classes
+        const mathClass = classRepository.create({
+          title: 'SS3 Mathematics',
+          subject: 'Mathematics',
+          type: 'compulsory',
+          gradeLevel: 'SS3',
+          startTime: new Date(new Date().setHours(9, 0, 0, 0)),
+          endTime: new Date(new Date().setHours(10, 0, 0, 0)),
+          location: 'Room 5',
+          isActive: true,
+          teacher,
+          students: [savedStudent]
+        });
+
+        const scienceClass = classRepository.create({
+          title: 'SS3 Basic Science',
+          subject: 'Science',
+          type: 'compulsory',
+          gradeLevel: 'SS3',
+          startTime: new Date(new Date().setHours(11, 0, 0, 0)),
+          endTime: new Date(new Date().setHours(12, 0, 0, 0)),
+          location: 'Lab 2',
+          isActive: true,
+          teacher,
+          students: [savedStudent]
+        });
+
+        const englishClass = classRepository.create({
+          title: 'SS3 English',
+          subject: 'English',
+          type: 'compulsory',
+          gradeLevel: 'SS3',
+          startTime: new Date(new Date().setHours(13, 0, 0, 0)),
+          endTime: new Date(new Date().setHours(14, 0, 0, 0)),
+          location: 'Room 2',
+          isActive: true,
+          teacher,
+          students: [savedStudent]
+        });
+
+        await classRepository.save([mathClass, scienceClass, englishClass]);
+
+        // 2. Create Subject Mock Assignments
+        const mathHW = assignmentRepository.create({
+          title: 'Algebra Worksheet',
+          subject: 'Mathematics',
+          dueDate: new Date(),
+          points: 10,
+          teacher,
+          class: mathClass,
+          students: [savedStudent]
+        });
+
+        const engEssay = assignmentRepository.create({
+          title: 'Narrative Essay',
+          subject: 'English',
+          dueDate: new Date(),
+          points: 10,
+          teacher,
+          class: englishClass,
+          students: [savedStudent]
+        });
+
+        await assignmentRepository.save([mathHW, engEssay]);
+
+        // 3. Score Student Assignments (Out of 10)
+        await studentAssignmentRepository.save([
+          studentAssignmentRepository.create({
+            grade: 8,
+            status: AssignmentStatus.GRADED,
+            student: savedStudent,
+            assignment: mathHW,
+          }),
+          studentAssignmentRepository.create({
+            grade: 7,
+            status: AssignmentStatus.GRADED,
+            student: savedStudent,
+            assignment: engEssay,
+          })
+        ]);
+
+        // 4. Create Mock Class Activities (Tests & Exams)
+        const mathTest = classActivityRepository.create({
+          title: 'Mid-Term Test',
+          subject: 'Mathematics',
+          dueDate: new Date(),
+          totalPoints: 30,
+          isCompleted: true,
+          teacher,
+          class: mathClass,
+        });
+
+        const mathExam = classActivityRepository.create({
+          title: 'Final Examination',
+          subject: 'Mathematics',
+          dueDate: new Date(),
+          totalPoints: 60,
+          isCompleted: true,
+          teacher,
+          class: mathClass,
+        });
+
+        const engExam = classActivityRepository.create({
+          title: 'Final Examination',
+          subject: 'English',
+          dueDate: new Date(),
+          totalPoints: 60,
+          isCompleted: true,
+          teacher,
+          class: englishClass,
+        });
+
+        const scienceTest = classActivityRepository.create({
+          title: 'First CA Test',
+          subject: 'Science',
+          dueDate: new Date(),
+          totalPoints: 40,
+          isCompleted: true,
+          teacher,
+          class: scienceClass
+        });
+
+        await classActivityRepository.save([mathTest, mathExam, engExam, scienceTest]);
+
+        // 5. Score the Student's Activities
+        await studentClassActivityRepository.save([
+          studentClassActivityRepository.create({
+            score: 25, // Math Test Server returns this exactly mapping for 30
+            status: ClassActivityStatus.GRADED,
+            student: savedStudent,
+            classActivity: mathTest,
+          }),
+          studentClassActivityRepository.create({
+            score: 55, // Math Exam
+            status: ClassActivityStatus.GRADED,
+            student: savedStudent,
+            classActivity: mathExam,
+          }),
+          studentClassActivityRepository.create({
+            score: 42, // Eng Exam
+            status: ClassActivityStatus.GRADED,
+            student: savedStudent,
+            classActivity: engExam,
+          }),
+          studentClassActivityRepository.create({
+            score: 30, // Science Test
+            status: ClassActivityStatus.GRADED,
+            student: savedStudent,
+            classActivity: scienceTest,
+          })
+        ]);
+
+        console.log('✓ Injected dummy assignments, CBTs, and Class mappings for STU001 (Alice Student)');
+      }
     } else {
       // Update password for existing student
       const hashedPassword = await bcrypt.hash('student123', 10);
@@ -276,7 +442,7 @@ export class DatabaseSeeder {
 
     if (!existingStudent) {
       const hashedPassword = await bcrypt.hash('university123', 10);
-      
+
       const studentUser = userRepository.create({
         email: 'university@example.com',
         password: hashedPassword,

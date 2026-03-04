@@ -39,7 +39,7 @@ export class RecordsService {
     async getReportCard(userId: string, academicYear: string, term: string): Promise<ReportCardDto> {
         const user = await this.userRepository.findOne({
             where: { id: userId },
-            relations: ['student', 'student.classes'],
+            relations: ['student', 'student.classes', 'student.academicProgress'],
         });
 
         if (!user || !user.student) {
@@ -121,6 +121,9 @@ export class RecordsService {
                 totalScore: totalScoreSum,
                 numberOfSubjects,
                 attendancePercentage: 92, // Mocked overall attendance logic
+                gpa: user.student.academicProgress?.gpa || 0.0,
+                completedCredits: user.student.academicProgress ? `${user.student.academicProgress.completedCredits}/${user.student.academicProgress.totalCredits}` : '0/0',
+                classRank: '4th/32', // Mocked, ideally requires a rank computation over the whole class
             },
             subjects: subjectsArray,
             teacherRemark: averageScore >= 75 ? 'An outstanding performance this term. Keep it up!' :

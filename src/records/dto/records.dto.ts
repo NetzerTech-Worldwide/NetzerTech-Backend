@@ -35,6 +35,15 @@ export class ReportCardSummaryDto {
 
     @ApiProperty()
     attendancePercentage: number;
+
+    @ApiProperty()
+    gpa: number;
+
+    @ApiProperty()
+    completedCredits: string;
+
+    @ApiProperty()
+    classRank: string;
 }
 
 export class ReportCardStudentInfoDto {
