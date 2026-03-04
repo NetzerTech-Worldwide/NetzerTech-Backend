@@ -82,6 +82,8 @@ export class TimetableService {
                 endTime: localEndTime,
                 teacherName: cls.teacher ? cls.teacher.fullName : 'Class Teacher',
                 location: cls.location || 'Main Campus',
+                description: cls.description || null,
+                meetingUrl: null, // Classes are assumed physical without LS 
                 status
             });
         });
@@ -100,6 +102,8 @@ export class TimetableService {
                 endTime: ls.endTime,
                 teacherName: ls.class && ls.class.teacher ? ls.class.teacher.fullName : 'Host',
                 location: ls.meetingUrl ? 'Virtual (Zoom)' : 'Online',
+                description: ls.description || null,
+                meetingUrl: ls.meetingUrl || null,
                 status
             });
         });

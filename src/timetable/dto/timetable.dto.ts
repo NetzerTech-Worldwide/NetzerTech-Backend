@@ -22,6 +22,12 @@ export class TimetableEventDto {
     @ApiProperty({ description: 'Physical or virtual location' })
     location: string;
 
+    @ApiProperty({ description: 'Detailed description of the event or class', nullable: true })
+    description: string | null;
+
+    @ApiProperty({ description: 'Virtual meeting URL if applicable', nullable: true })
+    meetingUrl: string | null;
+
     @ApiProperty({ description: 'Current status based on server time', example: 'upcoming' })
     status: 'ongoing' | 'upcoming' | 'completed';
 }
