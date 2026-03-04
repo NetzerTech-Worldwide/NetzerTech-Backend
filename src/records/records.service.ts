@@ -137,4 +137,25 @@ export class RecordsService {
             remark: '-',
         };
     }
+
+    async downloadReportCard(userId: string, academicYear: string, term: string): Promise<{ downloadUrl: string }> {
+        // In a full implementation, this method would use a library like PDFKit or Puppeteer
+        // to render the HTML report card into a PDF buffer, upload it to S3/Cloudinary, 
+        // and return the secure signed URL. 
+        // For now, we return a mocked URL to unblock the frontend's download button UX.
+
+        // Validate the student exists
+        const user = await this.userRepository.findOne({
+            where: { id: userId },
+            relations: ['student'],
+        });
+
+        if (!user || !user.student) {
+            throw new NotFoundException('Student profile not found');
+        }
+
+        return {
+            downloadUrl: `https://api.netzertech.co/storage/report-cards/${user.student.id}-${academicYear.replace('/', '-')}-${term}.pdf`
+        };
+    }
 }

@@ -56,4 +56,21 @@ export class RecordsController {
     async getPerformanceAnalytics(@Request() req: AuthenticatedRequest): Promise<PerformanceAnalyticsDto[]> {
         return this.recordsService.getPerformanceAnalytics(req.user.id);
     }
+
+    @Get('download')
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Generate and download the PDF report card for a specific term' })
+    @ApiQuery({ name: 'academicYear', required: true, example: '2024/2025' })
+    @ApiQuery({ name: 'term', required: true, example: 'First' })
+    @ApiResponse({
+        status: 200,
+        description: 'Returns a URL or Base64 string for the generated PDF',
+    })
+    async downloadReportCard(
+        @Request() req: AuthenticatedRequest,
+        @Query('academicYear') academicYear: string,
+        @Query('term') term: string,
+    ): Promise<{ downloadUrl: string }> {
+        return this.recordsService.downloadReportCard(req.user.id, academicYear, term);
+    }
 }
