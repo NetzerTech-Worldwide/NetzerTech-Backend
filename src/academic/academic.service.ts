@@ -15,7 +15,14 @@ import { Reminder } from '../entities/reminder.entity';
 import { LiveSessionMessage } from '../entities/live-session-message.entity';
 import { LiveSessionMessageDto, SendLiveSessionMessageDto } from './dto/live-session-message.dto';
 import { ClassActivity, Question, StudentClassActivity, ClassActivityStatus, LearningMaterial, LectureNote, LectureNoteSection, Assignment, StudentAssignment, AssignmentStatus } from '../entities';
-import { StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, SaveClassActivityProgressDto, ClassActivityResultAnalysisDto, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto, StartAssignmentResponseDto, SubmitAssignmentDto, SubmissionViewDto } from './dto';
+import {
+  StartClassActivityResponseDto, ClassActivityQuestionsResponseDto, ClassActivityDetailDto, SubmitClassActivityDto, ClassActivityResponseDto, ClassActivityFilter, SaveClassActivityProgressDto, ClassActivityResultAnalysisDto, LearningMaterialDto, LearningMaterialDetailDto, AssignmentResponseDto, AssignmentFilter, AssignmentDetailDto,
+  StartAssignmentResponseDto,
+  SubmitAssignmentDto,
+  SubmissionViewDto,
+  ClassActivityReviewResponseDto,
+  ClassActivityReviewItemDto
+} from './dto';
 
 @Injectable()
 export class AcademicService {
@@ -1675,6 +1682,71 @@ export class AcademicService {
       correctAnswers,
       incorrectAnswers,
       skippedAnswers,
+    };
+  }
+
+  async getClassActivityReview(userId: string, classActivityId: string): Promise<ClassActivityReviewResponseDto> {
+    const studentClassActivity = await this.studentClassActivityRepository.findOne({
+      where: {
+        student: { user: { id: userId } },
+        classActivity: { id: classActivityId },
+      },
+      relations: ['classActivity', 'classActivity.questions'],
+    });
+
+    if (!studentClassActivity) {
+      throw new NotFoundException('Class activity attempt not found');
+    }
+
+    if (studentClassActivity.status !== ClassActivityStatus.SUBMITTED && studentClassActivity.status !== ClassActivityStatus.GRADED) {
+      throw new BadRequestException('Cannot review an activity that has not been submitted');
+    }
+
+    const questions = studentClassActivity.classActivity.questions;
+    const answers = studentClassActivity.answers || {};
+
+    const reviewItems: ClassActivityReviewItemDto[] = [];
+    let correctAnswers = 0;
+    let incorrectAnswers = 0;
+    let skippedAnswers = 0;
+
+    for (const question of questions) {
+      const studentAnswer = answers[question.id] || null;
+      let isCorrect = false;
+
+      if (!studentAnswer) {
+        skippedAnswers++;
+      } else {
+        isCorrect = !!question.correctAnswer && question.correctAnswer.toLowerCase() === studentAnswer.toLowerCase();
+        if (isCorrect) {
+          correctAnswers++;
+        } else {
+          incorrectAnswers++;
+        }
+      }
+
+      reviewItems.push({
+        questionId: question.id,
+        text: question.text,
+        type: question.type,
+        options: question.options,
+        studentAnswer,
+        correctAnswer: question.correctAnswer,
+        isCorrect,
+      });
+    }
+
+    const score = studentClassActivity.score !== undefined && studentClassActivity.score !== null ? Number(studentClassActivity.score) : correctAnswers;
+
+    return {
+      review: reviewItems,
+      summary: {
+        score,
+        totalQuestions: questions.length,
+        correctAnswers,
+        incorrectAnswers,
+        skippedAnswers,
+      }
     };
   }
 }

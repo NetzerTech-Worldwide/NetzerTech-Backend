@@ -159,3 +159,34 @@ export class ClassActivityResultAnalysisDto {
   @ApiProperty({ description: 'Number of skipped or unanswered questions', example: 3 })
   skippedAnswers: number;
 }
+
+export class ClassActivityReviewItemDto {
+  @ApiProperty({ description: 'The question ID' })
+  questionId: string;
+
+  @ApiProperty({ description: 'The question text' })
+  text: string;
+
+  @ApiProperty({ enum: QuestionType })
+  type: QuestionType;
+
+  @ApiProperty({ type: [String], nullable: true })
+  options: string[];
+
+  @ApiProperty({ description: 'The answer the student selected. Null if skipped.', nullable: true })
+  studentAnswer: string | null;
+
+  @ApiProperty({ description: 'The actual correct answer for the question' })
+  correctAnswer: string;
+
+  @ApiProperty({ description: 'Whether the student got this question right', example: true })
+  isCorrect: boolean;
+}
+
+export class ClassActivityReviewResponseDto {
+  @ApiProperty({ type: [ClassActivityReviewItemDto] })
+  review: ClassActivityReviewItemDto[];
+
+  @ApiProperty({ type: ClassActivityResultAnalysisDto })
+  summary: ClassActivityResultAnalysisDto;
+}

@@ -14,7 +14,8 @@ import {
     ClassActivityResponseDto,
     ClassActivityFilter,
     SaveClassActivityProgressDto,
-    ClassActivityResultAnalysisDto
+    ClassActivityResultAnalysisDto,
+    ClassActivityReviewResponseDto
 } from './dto';
 
 @ApiTags('Examination')
@@ -137,5 +138,20 @@ export class ExaminationController {
         @Param('id') examinationId: string,
     ): Promise<ClassActivityResultAnalysisDto> {
         return this.academicService.getClassActivityResult(req.user.id, examinationId);
+    }
+
+    @Get(':examinationId/review')
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Get a full review of submitted answers vs correct answers' })
+    @ApiResponse({
+        status: 200,
+        description: 'Returns the question-by-question breakdown of the test.',
+        type: ClassActivityReviewResponseDto,
+    })
+    async getClassActivityReview(
+        @Request() req: AuthenticatedRequest,
+        @Param('examinationId') examinationId: string,
+    ): Promise<ClassActivityReviewResponseDto> {
+        return this.academicService.getClassActivityReview(req.user.id, examinationId);
     }
 }
