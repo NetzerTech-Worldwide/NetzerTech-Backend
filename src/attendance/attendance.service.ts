@@ -24,11 +24,21 @@ export class AttendanceService {
         return user.student;
     }
 
-    async getOverview(userId: string): Promise<AttendanceOverviewDto> {
+    async getOverview(userId: string, startDate?: string, endDate?: string): Promise<AttendanceOverviewDto> {
         const student = await this.getStudent(userId);
 
+        const whereClause: any = { student: { id: student.id } };
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            // Ensure end date covers the whole day
+            end.setHours(23, 59, 59, 999);
+            whereClause.date = Between(start, end);
+        }
+
         const allRecords = await this.attendanceRepository.find({
-            where: { student: { id: student.id } },
+            where: whereClause,
             relations: ['class'],
             order: { date: 'DESC' }
         });

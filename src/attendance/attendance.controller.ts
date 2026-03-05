@@ -17,8 +17,14 @@ export class AttendanceController {
     @Get('overview')
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
     @ApiOperation({ summary: 'Get overview metrics for attendance' })
-    async getOverview(@Request() req) {
-        return this.attendanceService.getOverview(req.user.id);
+    @ApiQuery({ name: 'startDate', required: false, type: String })
+    @ApiQuery({ name: 'endDate', required: false, type: String })
+    async getOverview(
+        @Request() req,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+    ) {
+        return this.attendanceService.getOverview(req.user.id, startDate, endDate);
     }
 
     @Get('calendar')
