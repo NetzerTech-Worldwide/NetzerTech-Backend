@@ -13,6 +13,7 @@ import { MailModule } from './mail/mail.module';
 import { ContactModule } from './contact/contact.module';
 import { RecordsModule } from './records/records.module';
 import { TimetableModule } from './timetable/timetable.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import {
   User,
   Student,
@@ -168,6 +169,7 @@ import {
     ContactModule,
     RecordsModule,
     TimetableModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [
