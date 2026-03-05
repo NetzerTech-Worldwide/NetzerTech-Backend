@@ -33,6 +33,12 @@ export class Attendance {
   date: Date;
 
   @Column({ nullable: true })
+  timeIn: string;
+
+  @Column({ nullable: true })
+  timeOut: string;
+
+  @Column({ nullable: true })
   notes: string;
 
   @CreateDateColumn()

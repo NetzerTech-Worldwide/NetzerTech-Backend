@@ -5,6 +5,7 @@ export * from './live-session-message.entity';
 export * from './question.entity';
 export * from './student-class-activity.entity';
 export * from './class-activity.entity';
+export * from './leave-request.entity';
 export * from './learning-material.entity';
 export * from './lecture-note.entity';
 export * from './lecture-note-section.entity';
