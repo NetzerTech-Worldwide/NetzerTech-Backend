@@ -25,6 +25,18 @@ export class Parent {
   @Column({ nullable: true })
   address: string;
 
+  @Column({ nullable: true })
+  relationship: string;
+
+  @Column({ nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
+  occupation: string;
+
+  @Column({ nullable: true })
+  workAddress: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -14,6 +14,7 @@ import { ContactModule } from './contact/contact.module';
 import { RecordsModule } from './records/records.module';
 import { TimetableModule } from './timetable/timetable.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { ProfileModule } from './profile/profile.module';
 import {
   User,
   Student,
@@ -170,6 +171,7 @@ import {
     RecordsModule,
     TimetableModule,
     AttendanceModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [

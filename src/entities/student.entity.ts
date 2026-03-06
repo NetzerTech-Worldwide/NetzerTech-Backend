@@ -51,6 +51,36 @@ export class Student {
   @Column({ nullable: true })
   gender: string;
 
+  @Column({ nullable: true })
+  bloodGroup: string;
+
+  @Column({ nullable: true })
+  genotype: string;
+
+  @Column({ nullable: true })
+  medicalCondition: string;
+
+  @Column({ nullable: true })
+  allergies: string;
+
+  @Column({ nullable: true })
+  phoneNumber: string;
+
+  @Column({ nullable: true })
+  residentialAddress: string;
+
+  @Column({ nullable: true })
+  stateOfOrigin: string;
+
+  @Column({ nullable: true })
+  lga: string;
+
+  @Column({ nullable: true })
+  nationality: string;
+
+  @Column({ type: 'date', nullable: true })
+  admissionDate: Date | string;
+
   @CreateDateColumn()
   createdAt: Date;
 
