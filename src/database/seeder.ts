@@ -52,6 +52,33 @@ export class DatabaseSeeder {
       `);
 
       console.log('✓ Schema migrations completed');
+
+      // -- Enable RLS on all public tables (Supabase security requirement) --
+      // NOTE: NestJS connects via service_role which bypasses RLS automatically.
+      // This only locks down direct anonymous PostgREST access to these tables.
+      console.log('Enabling Row Level Security on all tables...');
+      const tables = [
+        'users', 'students', 'parents', 'teachers', 'admins',
+        'classes', 'class_activities', 'student_class_activities',
+        'class_activities_students_students', 'classes_students_students',
+        'assignments', 'student_assignments', 'assignments_students_students',
+        'assignment_students', 'tests', 'tests_students_students',
+        'events', 'events_students_students',
+        'attendances', 'leave_requests',
+        'fees', 'messages',
+        'academic_progress', 'student_class_registrations',
+        'reminders', 'forum_topics',
+        'password_reset_tokens', 'blacklisted_tokens',
+        'activity_logs',
+        'subject_modules', 'live_sessions', 'live_session_messages', 'live_session_participants',
+        'learning_materials', 'lecture_notes', 'lecture_note_sections',
+        'questions',
+      ];
+
+      for (const table of tables) {
+        await queryRunner.query(`ALTER TABLE IF EXISTS "${table}" ENABLE ROW LEVEL SECURITY`);
+      }
+      console.log('✓ RLS enabled on all tables');
     } catch (err) {
       console.error('Migration error:', err.message);
       throw err;
