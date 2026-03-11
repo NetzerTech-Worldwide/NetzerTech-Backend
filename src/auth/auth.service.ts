@@ -223,22 +223,30 @@ export class AuthService {
       lastLoginAt: new Date(),
     });
 
+    // Re-fetch user with all profile relations so getUserProfile doesn't crash
+    // (the user object from validateStudent only has the reverse relation student→user,
+    //  not the forward relation user→student/parent/teacher/admin)
+    const fullUser = await this.userRepository.findOne({
+      where: { id: user.id },
+      relations: ['student', 'parent', 'teacher', 'admin'],
+    }) ?? user; // Fallback to original user if re-fetch fails
+
     // Always include mustChangePassword to track first-time users
     const response: any = {
       accessToken,
-      mustChangePassword: user.mustChangePassword,
+      mustChangePassword: fullUser.mustChangePassword,
     };
 
     // If password has been changed, include full profile information
-    if (!user.mustChangePassword) {
-      response.user = this.getUserProfile(user);
+    if (!fullUser.mustChangePassword) {
+      response.user = this.getUserProfile(fullUser);
     } else {
       // For first-time users, return minimal user info
       response.user = {
-        id: user.id,
-        email: user.email,
-        userType: user.userType,
-        isActive: user.isActive,
+        id: fullUser.id,
+        email: fullUser.email,
+        userType: fullUser.userType,
+        isActive: fullUser.isActive,
       };
       response.message = 'Password change required on first login';
     }
