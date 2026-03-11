@@ -202,7 +202,7 @@ export class DatabaseSeeder {
         password: hashedPassword,
         userType: UserRole.SECONDARY_STUDENT,
         isActive: true,
-        mustChangePassword: true,
+        mustChangePassword: false,  // false for test/dev account - no forced password change
       });
 
       const savedStudentUser = await userRepository.save(studentUser);
@@ -403,11 +403,12 @@ export class DatabaseSeeder {
         console.log('✓ Injected dummy assignments, CBTs, and Class mappings for STU001 (Alice Student)');
       }
     } else {
-      // Update password for existing student
+      // Update password AND mustChangePassword for existing student
       const hashedPassword = await bcrypt.hash('student123', 10);
       if (existingStudent.user) {
         existingStudent.user.password = hashedPassword;
         existingStudent.user.isActive = true;
+        existingStudent.user.mustChangePassword = false;  // Ensure test account is not blocked
         await userRepository.save(existingStudent.user);
         console.log('✓ Secondary Student password updated: STU001 (Alice Student)');
       } else {
@@ -448,7 +449,7 @@ export class DatabaseSeeder {
         password: hashedPassword,
         userType: UserRole.UNIVERSITY_STUDENT,
         isActive: true,
-        mustChangePassword: true,
+        mustChangePassword: false,  // false for test/dev account
       });
 
       const savedStudentUser = await userRepository.save(studentUser);
