@@ -30,7 +30,11 @@ export class AdminController {
       await seeder.seed();
       return { message: 'Database seeded successfully' };
     } catch (error) {
-      throw new InternalServerErrorException(`Seeding failed: ${error.message}`);
+      // Log the actual error for internal debugging
+      console.error('Database seeding failed:', error.message);
+      
+      // Return a generic error to the client to avoid leaking schema details
+      throw new InternalServerErrorException('Database seeding failed. Check server logs for details.');
     }
   }
 }

@@ -390,32 +390,33 @@ export class AuthService {
       where: { email },
     });
 
-    if (!user || !user.isActive) {
-      throw new NotFoundException('User not found');
+    // To prevent email enumeration, always return the same generic message
+    // If user doesn't exist or is inactive, silently succeed
+    if (user && user.isActive) {
+      // Generate reset token
+      const token = this.generateResetToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
+
+      // Save reset token
+      const resetToken = this.passwordResetTokenRepository.create({
+        token,
+        expiresAt,
+        user,
+      });
+
+      await this.passwordResetTokenRepository.save(resetToken);
+
+      // Send reset email
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+      const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+      
+      await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
     }
 
-    // Generate reset token
-    const token = this.generateResetToken();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
-
-    // Save reset token
-    const resetToken = this.passwordResetTokenRepository.create({
-      token,
-      expiresAt,
-      user,
-    });
-
-    await this.passwordResetTokenRepository.save(resetToken);
-
-    // Send reset email
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
-    
-    await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
-
+    // Always return this exact generic message so attackers can't guess valid emails
     return {
-      message: 'Password reset link sent to your email',
+      message: 'If the email exists, a password reset link has been sent to it',
     };
   }
 
