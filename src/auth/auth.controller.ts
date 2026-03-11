@@ -9,6 +9,7 @@ import {
   Request,
   BadRequestException,
 } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -31,6 +32,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @Post('login/student/secondary')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Student login' })
   @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
@@ -41,6 +43,7 @@ export class AuthController {
   }
 
   @Post('login/student/university')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'University student login' })
   @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
@@ -51,6 +54,7 @@ export class AuthController {
   }
 
   @Post('login/parent')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Parent login' })
   @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
@@ -61,6 +65,7 @@ export class AuthController {
   }
 
   @Post('login/teacher')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Teacher login' })
   @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
@@ -71,6 +76,7 @@ export class AuthController {
   }
 
   @Post('login/admin')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Admin login' })
   @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
@@ -81,6 +87,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({ status: 200, description: 'Password reset token generated' })
@@ -90,6 +97,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
@@ -145,3 +153,4 @@ export class AuthController {
     return this.authService.getUserProfile(req.user);
   }
 }
+

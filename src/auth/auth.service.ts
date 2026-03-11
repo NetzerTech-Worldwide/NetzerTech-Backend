@@ -459,11 +459,17 @@ export class AuthService {
   }
 
   async logout(token: string, userId: string): Promise<{ message: string }> {
-    // Decode token to get expiration time
-    const decoded = this.jwtService.decode(token) as JwtPayload;
+    let decoded: JwtPayload;
+
+    try {
+      // Verify token signature and expiration rather than just decoding
+      decoded = await this.jwtService.verifyAsync(token);
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired token');
+    }
 
     if (!decoded || !decoded.exp) {
-      throw new BadRequestException('Invalid token');
+      throw new BadRequestException('Invalid token structure');
     }
 
     // Calculate expiration date from token
