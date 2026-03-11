@@ -15,7 +15,11 @@ export class AdminController {
   @ApiOperation({ summary: 'Trigger database seeding (requires secret key)' })
   @ApiHeader({ name: 'x-seed-secret', description: 'Secret key to authorize seeding' })
   async runSeed(@Headers('x-seed-secret') secret: string) {
-    const expectedSecret = process.env.SEED_SECRET || 'netzertech-seed-2024';
+    const expectedSecret = process.env.SEED_SECRET;
+
+    if (!expectedSecret) {
+      throw new InternalServerErrorException('SEED_SECRET environment variable is not configured');
+    }
 
     if (!secret || secret !== expectedSecret) {
       throw new UnauthorizedException('Invalid seed secret');
