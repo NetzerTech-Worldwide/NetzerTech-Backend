@@ -6,9 +6,67 @@ import { UserRole } from '../common/enums/user-role.enum';
 export class DatabaseSeeder {
   constructor(private dataSource: DataSource) { }
 
+  private async runMigrations() {
+    console.log('Running schema migrations...');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    try {
+      // -- Parent table new columns --
+      await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "relationship" varchar`);
+      await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "email" varchar`);
+      await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "occupation" varchar`);
+      await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "workAddress" varchar`);
+
+      // -- Student table new columns --
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "bloodGroup" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "genotype" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "medicalCondition" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "allergies" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "phoneNumber" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "residentialAddress" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "stateOfOrigin" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "lga" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "nationality" varchar`);
+      await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "admissionDate" date`);
+
+      // -- Attendance table new columns --
+      await queryRunner.query(`ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "timeIn" varchar`);
+      await queryRunner.query(`ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "timeOut" varchar`);
+
+      // -- Leave requests table --
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "leave_requests" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "leaveType" varchar NOT NULL DEFAULT 'other',
+          "fromDate" date NOT NULL,
+          "toDate" date NOT NULL,
+          "reason" text NOT NULL,
+          "status" varchar NOT NULL DEFAULT 'pending',
+          "reviewerComments" text,
+          "student_id" uuid REFERENCES "students"("id"),
+          "reviewed_by_id" uuid REFERENCES "admins"("id"),
+          "createdAt" timestamp DEFAULT now(),
+          "updatedAt" timestamp DEFAULT now()
+        )
+      `);
+
+      console.log('✓ Schema migrations completed');
+    } catch (err) {
+      console.error('Migration error:', err.message);
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async seed() {
+
     console.log('Starting database seeding...');
     console.log('=====================================');
+
+    // Run schema migrations first to ensure all new columns exist
+    await this.runMigrations();
 
     // Create admin user
     await this.createAdmin();
