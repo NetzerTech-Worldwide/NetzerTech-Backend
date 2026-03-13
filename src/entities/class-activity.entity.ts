@@ -45,6 +45,9 @@ export class ClassActivity {
   @Column({ default: false })
   isCompleted: boolean;
 
+  @Column({ default: false })
+  isPractice: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -18,44 +18,45 @@ import {
     ClassActivityReviewResponseDto
 } from './dto';
 
-@ApiTags('Examination')
-@Controller('examination')
+@ApiTags('Practice Tests')
+@Controller('practice-tests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
-export class ExaminationController {
+export class PracticeTestController {
     constructor(private readonly academicService: AcademicService) { }
 
     @Get()
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Get student examinations with filtering (Alias for class-activities)' })
+    @ApiOperation({ summary: 'Get student practice tests' })
     @ApiQuery({
         name: 'filter',
         enum: ClassActivityFilter,
         required: false,
-        description: 'Filter examinations by their status (all, upcoming, or past)',
+        description: 'Filter practice tests by their status (all, upcoming, or past)',
     })
     @ApiResponse({
         status: 200,
-        description: 'Examinations retrieved successfully',
+        description: 'Practice tests retrieved successfully',
         type: [ClassActivityResponseDto],
     })
-    async getExaminations(
+    async getPracticeTests(
         @Request() req: AuthenticatedRequest,
         @Query('filter') filter: ClassActivityFilter = ClassActivityFilter.ALL,
     ): Promise<ClassActivityResponseDto[]> {
+        // Fetch class activities and filter for isPractice 
         const activities = await this.academicService.getClassActivities(req.user.id, filter);
-        return activities.filter((a: any) => !a.isPractice);
+        return activities.filter((activity: any) => activity.isPractice === true);
     }
 
     @Post(':id/start')
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Start an examination' })
+    @ApiOperation({ summary: 'Start a practice test' })
     @ApiResponse({
         status: 201,
-        description: 'Examination started successfully',
+        description: 'Practice test started successfully',
         type: StartClassActivityResponseDto,
     })
-    async startExamination(
+    async startPracticeTest(
         @Request() req: AuthenticatedRequest,
         @Param('id') examinationId: string,
     ): Promise<StartClassActivityResponseDto> {
@@ -64,13 +65,13 @@ export class ExaminationController {
 
     @Get(':id/questions')
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Get examination questions with pagination' })
+    @ApiOperation({ summary: 'Get practice test questions with pagination' })
     @ApiResponse({
         status: 200,
         description: 'Questions retrieved successfully',
         type: ClassActivityQuestionsResponseDto,
     })
-    async getExaminationQuestions(
+    async getPracticeTestQuestions(
         @Request() req: AuthenticatedRequest,
         @Param('id') examinationId: string,
         @Query('page') page: number = 1,
@@ -81,13 +82,13 @@ export class ExaminationController {
 
     @Get(':id')
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Get examination details' })
+    @ApiOperation({ summary: 'Get practice test details' })
     @ApiResponse({
         status: 200,
-        description: 'Examination details retrieved successfully',
+        description: 'Practice test details retrieved successfully',
         type: ClassActivityDetailDto,
     })
-    async getExaminationDetail(
+    async getPracticeTestDetail(
         @Request() req: AuthenticatedRequest,
         @Param('id') examinationId: string,
     ): Promise<ClassActivityDetailDto> {
@@ -97,12 +98,12 @@ export class ExaminationController {
     @Post(':id/submit')
     @HttpCode(HttpStatus.OK)
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Submit an examination attempt' })
+    @ApiOperation({ summary: 'Submit a practice test attempt' })
     @ApiResponse({
         status: 200,
-        description: 'Examination submitted and scored',
+        description: 'Practice test submitted and scored',
     })
-    async submitExamination(
+    async submitPracticeTest(
         @Request() req: AuthenticatedRequest,
         @Param('id') examinationId: string,
         @Body() submitDto: SubmitClassActivityDto,
@@ -113,12 +114,12 @@ export class ExaminationController {
     @Post(':id/save-progress')
     @HttpCode(HttpStatus.OK)
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Auto-save student progress for an active examination' })
+    @ApiOperation({ summary: 'Auto-save student progress for an active practice test' })
     @ApiResponse({
         status: 200,
-        description: 'Examination progress saved successfully',
+        description: 'Practice test progress saved successfully',
     })
-    async saveExaminationProgress(
+    async savePracticeTestProgress(
         @Request() req: AuthenticatedRequest,
         @Param('id') examinationId: string,
         @Body() progressDto: SaveClassActivityProgressDto,
@@ -128,13 +129,13 @@ export class ExaminationController {
 
     @Get(':id/result')
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Get detailed examination result analytics' })
+    @ApiOperation({ summary: 'Get detailed practice test result analytics' })
     @ApiResponse({
         status: 200,
         description: 'Detailed analytics retrieved successfully',
         type: ClassActivityResultAnalysisDto,
     })
-    async getExaminationResult(
+    async getPracticeTestResult(
         @Request() req: AuthenticatedRequest,
         @Param('id') examinationId: string,
     ): Promise<ClassActivityResultAnalysisDto> {
@@ -149,7 +150,7 @@ export class ExaminationController {
         description: 'Returns the question-by-question breakdown of the test.',
         type: ClassActivityReviewResponseDto,
     })
-    async getClassActivityReview(
+    async getPracticeTestReview(
         @Request() req: AuthenticatedRequest,
         @Param('examinationId') examinationId: string,
     ): Promise<ClassActivityReviewResponseDto> {

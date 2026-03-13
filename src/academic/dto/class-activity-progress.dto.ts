@@ -12,6 +12,9 @@ export class StartClassActivityResponseDto {
   @ApiProperty()
   startTime: Date;
 
+  @ApiProperty({ description: 'Pre-formatted localized duration string', example: '45 mins' })
+  duration: string;
+
   @ApiProperty({ enum: ClassActivityStatus })
   status: ClassActivityStatus;
 
@@ -33,8 +36,8 @@ export class QuestionDto {
   @ApiProperty({ enum: QuestionType })
   type: QuestionType;
 
-  @ApiProperty({ type: [String], nullable: true })
-  options: string[];
+  @ApiProperty({ type: [Object], nullable: true, description: 'List of options as { label, text }' })
+  options: any[];
 
   @ApiProperty()
   points: number;
@@ -94,10 +97,10 @@ export class ClassActivityDetailDto {
 
 export class SubmitClassActivityDto {
   @ApiProperty({
-    description: 'Map of question IDs to student answers',
-    example: { 'q-uuid-1': 'Option A', 'q-uuid-2': 'True' },
+    description: 'Map of question IDs to student answers (either string or object with label/option)',
+    example: { 'q-uuid-1': 'Option A', 'q-uuid-2': { label: 'A', option: 'x = 2' } },
   })
-  answers: Record<string, string>;
+  answers: Record<string, any>;
 }
 
 export enum ClassActivityFilter {
@@ -158,6 +161,15 @@ export class ClassActivityResultAnalysisDto {
 
   @ApiProperty({ description: 'Number of skipped or unanswered questions', example: 3 })
   skippedAnswers: number;
+
+  @ApiProperty({ description: 'Category performance percentages', example: { 'Problem Solving': 75, 'Application': 89 } })
+  categoryPerformance: Record<string, number>;
+
+  @ApiProperty({ description: 'Total time taken in seconds', example: 1534 })
+  timeTakenSeconds: number;
+
+  @ApiProperty({ description: 'Average time spent per question in seconds', example: 150 })
+  timePerQuestionSeconds: number;
 }
 
 export class ClassActivityReviewItemDto {
@@ -170,14 +182,17 @@ export class ClassActivityReviewItemDto {
   @ApiProperty({ enum: QuestionType })
   type: QuestionType;
 
-  @ApiProperty({ type: [String], nullable: true })
-  options: string[];
+  @ApiProperty({ type: [Object], nullable: true, description: 'List of options as { label, text }' })
+  options: any[];
 
   @ApiProperty({ description: 'The answer the student selected. Null if skipped.', nullable: true })
-  studentAnswer: string | null;
+  studentAnswer: any | null;
 
   @ApiProperty({ description: 'The actual correct answer for the question' })
-  correctAnswer: string;
+  correctAnswer: any;
+
+  @ApiProperty({ description: 'Explanation or full working out for the question', nullable: true })
+  solution: string | null;
 
   @ApiProperty({ description: 'Whether the student got this question right', example: true })
   isCorrect: boolean;

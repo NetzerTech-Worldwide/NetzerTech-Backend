@@ -23,6 +23,9 @@ import {
   StudentAssignment
 } from '../entities';
 
+import { PracticeTestController } from './practice-test.controller';
+
+// ... (TypeORMModule etc is inside the decorator below)
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -45,7 +48,7 @@ import {
       StudentAssignment,
     ]),
   ],
-  controllers: [AcademicController, ExaminationController],
+  controllers: [AcademicController, ExaminationController, PracticeTestController],
   providers: [AcademicService],
   exports: [AcademicService],
 })

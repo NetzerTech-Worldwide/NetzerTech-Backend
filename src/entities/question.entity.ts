@@ -30,8 +30,14 @@ export class Question {
   })
   type: QuestionType;
 
-  @Column({ type: 'simple-array', nullable: true })
-  options: string[]; // For MCQs
+  @Column({ type: 'jsonb', nullable: true })
+  options: any[]; // Array of { label: string, text: string }
+
+  @Column({ type: 'text', nullable: true })
+  solution: string;
+
+  @Column({ nullable: true })
+  category: string;
 
   @Column({ nullable: true })
   correctAnswer: string;

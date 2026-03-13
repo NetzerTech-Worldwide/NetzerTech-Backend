@@ -51,6 +51,15 @@ export class DatabaseSeeder {
         )
       `);
 
+      // -- Class Activities table new columns --
+      await queryRunner.query(`ALTER TABLE "class_activities" ADD COLUMN IF NOT EXISTS "isPractice" boolean DEFAULT false`);
+
+      // -- Questions table new columns & options type change --
+      await queryRunner.query(`ALTER TABLE "questions" DROP COLUMN IF EXISTS "options"`);
+      await queryRunner.query(`ALTER TABLE "questions" ADD COLUMN IF NOT EXISTS "options" jsonb`);
+      await queryRunner.query(`ALTER TABLE "questions" ADD COLUMN IF NOT EXISTS "solution" text`);
+      await queryRunner.query(`ALTER TABLE "questions" ADD COLUMN IF NOT EXISTS "category" text`);
+
       console.log('✓ Schema migrations completed');
 
       // -- Enable RLS on all public tables (Supabase security requirement) --

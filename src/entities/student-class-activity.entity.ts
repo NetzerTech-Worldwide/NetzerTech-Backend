@@ -40,7 +40,7 @@ export class StudentClassActivity {
   score: number;
 
   @Column({ type: 'json', nullable: true })
-  answers: Record<string, string>; // questionId: answer
+  answers: Record<string, any>; // questionId: answer
 
   @CreateDateColumn()
   createdAt: Date;

@@ -893,6 +893,7 @@ export class AcademicService {
         classActivityId: classActivity.id,
         attemptId: studentClassActivity.id,
         startTime: studentClassActivity.startedAt || new Date(),
+        duration: classActivity.timeLimit ? `${classActivity.timeLimit} mins` : 'Untimed',
         status: studentClassActivity.status,
         answers: studentClassActivity.answers || {},
       };
@@ -912,6 +913,7 @@ export class AcademicService {
       classActivityId: classActivity.id,
       attemptId: savedAttempt.id,
       startTime: savedAttempt.startedAt as Date,
+      duration: classActivity.timeLimit ? `${classActivity.timeLimit} mins` : 'Untimed',
       status: savedAttempt.status,
     };
   }
@@ -1657,24 +1659,50 @@ export class AcademicService {
     let incorrectAnswers = 0;
     let skippedAnswers = 0;
 
+    const categoryStats: Record<string, { total: number, correct: number }> = {};
+
     for (const question of questions) {
+      if (question.category) {
+        if (!categoryStats[question.category]) {
+          categoryStats[question.category] = { total: 0, correct: 0 };
+        }
+        categoryStats[question.category].total++;
+      }
+
       const studentAnswer = answers[question.id];
       if (!studentAnswer) {
         skippedAnswers++;
         continue;
       }
 
-      // Compare case-insensitive string match or array checks based on how Question type stores correct output.
-      const isCorrect = question.correctAnswer && question.correctAnswer.toLowerCase() === studentAnswer.toLowerCase();
+      const answerText = typeof studentAnswer === 'object' && studentAnswer !== null 
+        ? (studentAnswer.option || studentAnswer.text || studentAnswer.label || '') 
+        : String(studentAnswer);
+
+      const isCorrect = question.correctAnswer && question.correctAnswer.toLowerCase() === answerText.toLowerCase();
+      
       if (isCorrect) {
         correctAnswers++;
+        if (question.category) {
+          categoryStats[question.category].correct++;
+        }
       } else {
         incorrectAnswers++;
       }
     }
 
-    // Default to submission score if pre-calculated, else dynamically use total matched
+    const categoryPerformance: Record<string, number> = {};
+    for (const [cat, stats] of Object.entries(categoryStats)) {
+      categoryPerformance[cat] = Math.round((stats.correct / stats.total) * 100);
+    }
+
     const score = submission.score !== undefined && submission.score !== null ? Number(submission.score) : correctAnswers;
+
+    let timeTakenSeconds = 0;
+    if (submission.startedAt && submission.submittedAt) {
+      timeTakenSeconds = Math.floor((new Date(submission.submittedAt).getTime() - new Date(submission.startedAt).getTime()) / 1000);
+    }
+    const timePerQuestionSeconds = questions.length > 0 ? Math.floor(timeTakenSeconds / questions.length) : 0;
 
     return {
       score,
@@ -1682,6 +1710,9 @@ export class AcademicService {
       correctAnswers,
       incorrectAnswers,
       skippedAnswers,
+      categoryPerformance,
+      timeTakenSeconds,
+      timePerQuestionSeconds
     };
   }
 
@@ -1710,16 +1741,32 @@ export class AcademicService {
     let incorrectAnswers = 0;
     let skippedAnswers = 0;
 
+    const categoryStats: Record<string, { total: number, correct: number }> = {};
+
     for (const question of questions) {
+      if (question.category) {
+        if (!categoryStats[question.category]) {
+          categoryStats[question.category] = { total: 0, correct: 0 };
+        }
+        categoryStats[question.category].total++;
+      }
+
       const studentAnswer = answers[question.id] || null;
       let isCorrect = false;
 
       if (!studentAnswer) {
         skippedAnswers++;
       } else {
-        isCorrect = !!question.correctAnswer && question.correctAnswer.toLowerCase() === studentAnswer.toLowerCase();
+        const answerText = typeof studentAnswer === 'object' && studentAnswer !== null 
+          ? (studentAnswer.option || studentAnswer.text || studentAnswer.label || '') 
+          : String(studentAnswer);
+
+        isCorrect = !!question.correctAnswer && question.correctAnswer.toLowerCase() === answerText.toLowerCase();
         if (isCorrect) {
           correctAnswers++;
+          if (question.category) {
+            categoryStats[question.category].correct++;
+          }
         } else {
           incorrectAnswers++;
         }
@@ -1732,11 +1779,23 @@ export class AcademicService {
         options: question.options,
         studentAnswer,
         correctAnswer: question.correctAnswer,
+        solution: question.solution,
         isCorrect,
       });
     }
 
+    const categoryPerformance: Record<string, number> = {};
+    for (const [cat, stats] of Object.entries(categoryStats)) {
+      categoryPerformance[cat] = Math.round((stats.correct / stats.total) * 100);
+    }
+
     const score = studentClassActivity.score !== undefined && studentClassActivity.score !== null ? Number(studentClassActivity.score) : correctAnswers;
+
+    let timeTakenSeconds = 0;
+    if (studentClassActivity.startedAt && studentClassActivity.submittedAt) {
+      timeTakenSeconds = Math.floor((new Date(studentClassActivity.submittedAt).getTime() - new Date(studentClassActivity.startedAt).getTime()) / 1000);
+    }
+    const timePerQuestionSeconds = questions.length > 0 ? Math.floor(timeTakenSeconds / questions.length) : 0;
 
     return {
       review: reviewItems,
@@ -1746,6 +1805,9 @@ export class AcademicService {
         correctAnswers,
         incorrectAnswers,
         skippedAnswers,
+        categoryPerformance,
+        timeTakenSeconds,
+        timePerQuestionSeconds
       }
     };
   }
