@@ -92,6 +92,38 @@ async function bootstrap() {
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js',
     ],
+    customJsStr: `
+      window.addEventListener('load', function() {
+        // Intercept fetch to automatically set Bearer token when logging in via Swagger
+        const originalFetch = window.fetch;
+        window.fetch = async function() {
+          const response = await originalFetch.apply(this, arguments);
+          const url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0]?.url || '');
+          
+          if (url.includes('/login') && response.ok) {
+            const clone = response.clone();
+            clone.json().then((data) => {
+              if (data && data.access_token) {
+                // Wait briefly for Swagger UI to finish rendering
+                setTimeout(() => {
+                  if (window.ui && window.ui.authActions) {
+                    window.ui.authActions.authorize({
+                      'JWT-auth': {
+                        name: 'JWT-auth',
+                        schema: { type: 'http', in: 'header', name: 'Authorization', description: '' },
+                        value: data.access_token
+                      }
+                    });
+                    console.log('✅ Swagger UI auto-populated with access token!');
+                  }
+                }, 500);
+              }
+            }).catch(() => {}); // ignore parse errors
+          }
+          return response;
+        };
+      });
+    `,
     customSiteTitle: 'NetzerTech API Docs',
   });
 
