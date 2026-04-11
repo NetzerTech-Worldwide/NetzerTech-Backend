@@ -52,7 +52,32 @@ async function bootstrap() {
 
         const document = SwaggerModule.createDocument(app, config);
         SwaggerModule.setup('api-docs', app, document, {
-            swaggerOptions: { persistAuthorization: true },
+            swaggerOptions: {
+                persistAuthorization: true,
+                // Capture the access token from login responses and store it
+                responseInterceptor: function (response: any) {
+                    if (response.url && response.url.indexOf('/login') !== -1 && response.status === 200) {
+                        try {
+                            var body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+                            var token = body && (body.accessToken || body.access_token);
+                            if (token) {
+                                (window as any).__netzer_token = token;
+                                console.log('[NetzerAuth] Token captured from login response');
+                            }
+                        } catch (e) { }
+                    }
+                    return response;
+                },
+                // Inject the stored token into all outgoing requests
+                requestInterceptor: function (req: any) {
+                    var token = (window as any).__netzer_token;
+                    if (token && req.url && req.url.indexOf('/login') === -1) {
+                        req.headers['Authorization'] = 'Bearer ' + token;
+                        console.log('[NetzerAuth] Injected Bearer token into:', req.url);
+                    }
+                    return req;
+                },
+            },
             customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
             customJs: [
                 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
