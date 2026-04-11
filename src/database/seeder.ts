@@ -131,9 +131,97 @@ export class DatabaseSeeder {
       for (const table of tables) {
         await queryRunner.query(`ALTER TABLE IF EXISTS "${table}" ENABLE ROW LEVEL SECURITY`);
       }
-      // Enable RLS on new support tables
-      await queryRunner.query(`ALTER TABLE IF EXISTS "support_tickets" ENABLE ROW LEVEL SECURITY`);
-      await queryRunner.query(`ALTER TABLE IF EXISTS "faqs" ENABLE ROW LEVEL SECURITY`);
+        await queryRunner.query(`ALTER TABLE IF EXISTS "support_tickets" ENABLE ROW LEVEL SECURITY`);
+        await queryRunner.query(`ALTER TABLE IF EXISTS "faqs" ENABLE ROW LEVEL SECURITY`);
+
+      // -- Library tables --
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "books" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "title" varchar NOT NULL,
+          "author" varchar NOT NULL,
+          "isbn" varchar,
+          "category" varchar NOT NULL,
+          "coverUrl" varchar,
+          "pages" integer DEFAULT 0,
+          "rating" decimal(3,1) DEFAULT 0,
+          "totalCopies" integer DEFAULT 1,
+          "availableCopies" integer DEFAULT 1,
+          "lateFineRate" decimal(10,2) DEFAULT 100,
+          "isActive" boolean DEFAULT true,
+          "createdAt" timestamp DEFAULT now(),
+          "updatedAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "reading_goals" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "studentId" uuid REFERENCES "students"("id") ON DELETE CASCADE,
+          "year" integer NOT NULL,
+          "targetBooks" integer DEFAULT 20,
+          "booksRead" integer DEFAULT 0,
+          "createdAt" timestamp DEFAULT now(),
+          "updatedAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "book_loans" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "bookId" uuid REFERENCES "books"("id") ON DELETE CASCADE,
+          "studentId" uuid REFERENCES "students"("id") ON DELETE CASCADE,
+          "borrowDate" timestamp NOT NULL,
+          "dueDate" timestamp NOT NULL,
+          "returnDate" timestamp,
+          "status" varchar NOT NULL DEFAULT 'Active',
+          "fineAmount" decimal(10,2) DEFAULT 0,
+          "reminderSentDaysBefore" integer,
+          "createdAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "book_reservations" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "bookId" uuid REFERENCES "books"("id") ON DELETE CASCADE,
+          "studentId" uuid REFERENCES "students"("id") ON DELETE CASCADE,
+          "status" varchar DEFAULT 'Pending',
+          "createdAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "book_wishlists" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "bookId" uuid REFERENCES "books"("id") ON DELETE CASCADE,
+          "studentId" uuid REFERENCES "students"("id") ON DELETE CASCADE,
+          "createdAt" timestamp DEFAULT now()
+        )
+      `);
+
+      // -- Seed default Books --
+      const existingBooks = await queryRunner.query(`SELECT COUNT(*) as count FROM "books"`);
+      if (parseInt(existingBooks[0].count) === 0) {
+        await queryRunner.query(`
+          INSERT INTO "books" ("title", "author", "isbn", "category", "pages", "rating", "totalCopies", "availableCopies") VALUES
+          ('To Kill a Mockingbird', 'Harper Lee', '978-0-06-112008-4', 'English', 281, 4.5, 5, 2),
+          ('1984', 'George Orwell', '978-0-45-228423-4', 'English', 328, 4.7, 3, 0),
+          ('The Great Gatsby', 'F. Scott Fitzgerald', '978-0-74-327356-5', 'English', 180, 4.5, 4, 4),
+          ('Introduction to Algorithms', 'Thomas H. Cormen', '978-0-26-203384-8', 'Computer Studies', 1292, 4.6, 2, 2),
+          ('A Brief History of Time', 'Stephen Hawking', '978-0-55-338016-3', 'Science', 212, 4.6, 3, 3),
+          ('General Mathematics', 'Raymond Toolsie', '978-0-68-231609-7', 'Mathematics', 440, 4.6, 6, 6)
+        `);
+        console.log('✓ Default Books seeded');
+      }
+
+      // Enable RLS on Library tables
+      await queryRunner.query(`ALTER TABLE IF EXISTS "books" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "reading_goals" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "book_loans" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "book_reservations" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "book_wishlists" ENABLE ROW LEVEL SECURITY`);
+
       console.log('✓ RLS enabled on all tables');
     } catch (err) {
       console.error('Migration error:', err.message);

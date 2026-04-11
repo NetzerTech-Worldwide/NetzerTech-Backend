@@ -17,6 +17,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './profile/profile.module';
 import { AdminModule } from './admin/admin.module';
 import { SupportModule } from './support/support.module';
+import { LibraryModule } from './library/library.module';
 import {
   User,
   Student,
@@ -51,6 +52,13 @@ import {
 } from './entities';
 import { SupportTicket } from './entities/support-ticket.entity';
 import { Faq } from './entities/faq.entity';
+import { 
+  Book, 
+  BookLoan, 
+  BookReservation, 
+  BookWishlist, 
+  ReadingGoal 
+} from './entities/library.entity';
 
 @Module({
   imports: [
@@ -113,6 +121,11 @@ import { Faq } from './entities/faq.entity';
             ActivityLog,
             SupportTicket,
             Faq,
+            Book, 
+            BookLoan, 
+            BookReservation, 
+            BookWishlist, 
+            ReadingGoal,
           ],
           synchronize: configService.get('NODE_ENV') === 'development',
           logging: configService.get('NODE_ENV') === 'development',
@@ -180,6 +193,7 @@ import { Faq } from './entities/faq.entity';
     ProfileModule,
     AdminModule,
     SupportModule,
+    LibraryModule,
   ],
   controllers: [AppController],
   providers: [
