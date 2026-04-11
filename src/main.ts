@@ -111,7 +111,7 @@ async function bootstrap() {
                     window.ui.authActions.authorize({
                       'JWT-auth': {
                         name: 'JWT-auth',
-                        schema: { type: 'http', in: 'header', name: 'Authorization', description: '' },
+                        schema: { type: 'http', in: 'header', name: 'Authorization', scheme: 'bearer', bearerFormat: 'JWT' },
                         value: token
                       }
                     });
