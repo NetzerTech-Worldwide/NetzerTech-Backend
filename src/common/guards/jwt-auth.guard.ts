@@ -12,9 +12,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     
     // Log authentication attempt
     if (!authHeader) {
-      this.logger.warn(`Authentication attempt without token: ${request.method} ${request.url}`);
+      this.logger.warn(`[AUTH] No Authorization header: ${request.method} ${request.url}`);
     } else {
-      this.logger.debug(`Authentication attempt: ${request.method} ${request.url}`);
+      const tokenPreview = authHeader.substring(0, 20) + '...';
+      this.logger.debug(`[AUTH] Header present (${tokenPreview}): ${request.method} ${request.url}`);
     }
     
     return super.canActivate(context) as Promise<boolean>;
