@@ -110,6 +110,12 @@ async function bootstrap() {
         return req;
       },
     },
+    // Vercel serverless can't serve static files from node_modules, so load from CDN
+    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+    customJs: [
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js',
+    ],
     customSiteTitle: 'NetzerTech API Docs',
   });
 
