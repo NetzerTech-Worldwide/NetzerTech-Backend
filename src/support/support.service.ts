@@ -72,10 +72,21 @@ export class SupportService {
         });
     }
 
-    async getTicketById(userId: string, ticketId: string): Promise<SupportTicket> {
-        const ticket = await this.ticketRepository.findOne({
-            where: { id: ticketId, userId },
-        });
+    async getTicketById(userId: string, identifier: string): Promise<SupportTicket> {
+        // Support lookup by either UUID (id) or ticket ID (TXT-XXXX)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+
+        let ticket: SupportTicket | null = null;
+
+        if (isUuid) {
+            ticket = await this.ticketRepository.findOne({
+                where: { id: identifier, userId },
+            });
+        } else {
+            ticket = await this.ticketRepository.findOne({
+                where: { ticketId: identifier, userId },
+            });
+        }
 
         if (!ticket) {
             throw new NotFoundException('Support ticket not found');
