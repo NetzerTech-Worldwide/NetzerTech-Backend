@@ -32,10 +32,26 @@ export class LibraryService {
             where: { studentId, status: LoanStatus.ACTIVE }
         });
 
-        const overdueLoans = await this.loanRepository.find({
-            where: { studentId, status: LoanStatus.OVERDUE }
+        // Calculate dynamic fines
+        const now = new Date();
+        let outstandingFines = 0;
+        
+        // Fines come from both active overdue loans and returned loans with unpaid fines
+        const loansWithPotentialFines = await this.loanRepository.find({
+            where: { studentId },
+            relations: ['book']
         });
-        const outstandingFines = overdueLoans.reduce((sum, loan) => sum + Number(loan.fineAmount), 0);
+
+        for (const loan of loansWithPotentialFines) {
+            if (loan.status === LoanStatus.RETURNED) {
+                outstandingFines += Number(loan.fineAmount);
+            } else if (now > loan.dueDate) {
+                // Determine active overdue fine manually
+                const diffTime = Math.abs(now.getTime() - loan.dueDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                outstandingFines += diffDays * Number(loan.book.lateFineRate);
+            }
+        }
 
         const returnedBooks = await this.loanRepository.count({
             where: { studentId, status: LoanStatus.RETURNED }
@@ -133,8 +149,16 @@ export class LibraryService {
         await this.bookRepository.save(loan.book);
 
         // Update Loan
+        const now = new Date();
         loan.status = LoanStatus.RETURNED;
-        loan.returnDate = new Date();
+        loan.returnDate = now;
+
+        // Finalize Fines if overdue
+        if (now > loan.dueDate) {
+            const diffTime = Math.abs(now.getTime() - loan.dueDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            loan.fineAmount = diffDays * Number(loan.book.lateFineRate);
+        }
         
         // Update reading goal
         const currentYear = new Date().getFullYear();
@@ -234,12 +258,46 @@ export class LibraryService {
     }
 
     // --- Reservations ---
-    async getReservations(studentId: string): Promise<BookReservation[]> {
-        return this.reservationRepository.find({
+    async getReservations(studentId: string): Promise<any[]> {
+        const reservations = await this.reservationRepository.find({
             where: { studentId },
             relations: ['book'],
-            order: { createdAt: 'DESC' }
+            order: { createdAt: 'ASC' } 
         });
+
+        const result = [];
+        for (const res of reservations) {
+            // Find queue position
+            const queue = await this.reservationRepository.find({
+                where: { bookId: res.bookId, status: 'Pending' },
+                order: { createdAt: 'ASC' }
+            });
+
+            const queuePosition = queue.findIndex(q => q.id === res.id) + 1;
+
+            // Find estimated date (look at earliest due date of active loans)
+            const activeLoans = await this.loanRepository.find({
+                where: { bookId: res.bookId, status: LoanStatus.ACTIVE },
+                order: { dueDate: 'ASC' }
+            });
+
+            let estAvailableDate = null;
+            if (activeLoans.length > 0) {
+                // Base it off the earliest due date, plus queue position padding
+                const baseDate = new Date(activeLoans[0].dueDate);
+                baseDate.setDate(baseDate.getDate() + (queuePosition - 1) * 7);
+                estAvailableDate = baseDate;
+            }
+
+            result.push({
+                ...res,
+                queuePosition: queuePosition > 0 ? `#${queuePosition} in line` : 'Ready',
+                estAvailableDate
+            });
+        }
+
+        // Return latest first for the UI view
+        return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
 
     async reserveBook(studentId: string, bookId: string): Promise<BookReservation> {
@@ -280,5 +338,39 @@ export class LibraryService {
         }
 
         return this.goalRepository.save(goal);
+    }
+
+    // --- Fines ---
+    async getActiveFines(studentId: string): Promise<any[]> {
+        const now = new Date();
+        const activeLoans = await this.loanRepository.find({
+            where: { studentId, status: LoanStatus.ACTIVE },
+            relations: ['book']
+        });
+
+        const overdueLoans = activeLoans.filter(loan => now > loan.dueDate);
+        
+        return overdueLoans.map(loan => {
+            const diffTime = Math.abs(now.getTime() - loan.dueDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const dynamicFine = diffDays * Number(loan.book.lateFineRate);
+
+            return {
+                ...loan,
+                daysOverdue: diffDays,
+                dynamicFineAmount: dynamicFine
+            };
+        });
+    }
+
+    async getFineHistory(studentId: string): Promise<BookLoan[]> {
+        // Return returned loans that incurred a fine
+        return this.loanRepository.createQueryBuilder('loan')
+            .leftJoinAndSelect('loan.book', 'book')
+            .where('loan.studentId = :studentId', { studentId })
+            .andWhere('loan.status = :status', { status: LoanStatus.RETURNED })
+            .andWhere('loan.fineAmount > 0')
+            .orderBy('loan.returnDate', 'DESC')
+            .getMany();
     }
 }

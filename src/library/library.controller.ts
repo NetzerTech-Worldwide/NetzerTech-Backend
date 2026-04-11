@@ -126,4 +126,17 @@ export class LibraryController {
     ) {
         return this.libraryService.setReadingGoal(req.user.id, dto);
     }
+
+    // --- Fines ---
+    @Get('fines')
+    @ApiOperation({ summary: 'Get active overdue fines' })
+    async getActiveFines(@Request() req: AuthenticatedRequest) {
+        return this.libraryService.getActiveFines(req.user.id);
+    }
+
+    @Get('fines/history')
+    @ApiOperation({ summary: 'Get history of paid or resolved fines' })
+    async getFineHistory(@Request() req: AuthenticatedRequest) {
+        return this.libraryService.getFineHistory(req.user.id);
+    }
 }
