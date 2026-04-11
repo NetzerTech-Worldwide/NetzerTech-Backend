@@ -84,9 +84,56 @@ export class DatabaseSeeder {
         'questions',
       ];
 
+      // -- Support Tickets table --
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "support_tickets" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "ticketId" varchar NOT NULL UNIQUE,
+          "category" varchar NOT NULL DEFAULT 'Other',
+          "subject" varchar NOT NULL,
+          "description" text NOT NULL,
+          "status" varchar NOT NULL DEFAULT 'In Progress',
+          "attachmentUrl" varchar,
+          "userId" uuid REFERENCES "users"("id") ON DELETE CASCADE,
+          "resolvedAt" timestamp,
+          "createdAt" timestamp DEFAULT now(),
+          "updatedAt" timestamp DEFAULT now()
+        )
+      `);
+
+      // -- FAQs table --
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "faqs" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "question" varchar NOT NULL,
+          "answer" text NOT NULL,
+          "category" varchar,
+          "sortOrder" integer DEFAULT 0,
+          "isActive" boolean DEFAULT true,
+          "createdAt" timestamp DEFAULT now()
+        )
+      `);
+
+      // -- Seed default FAQs if table is empty --
+      const existingFaqs = await queryRunner.query(`SELECT COUNT(*) as count FROM "faqs"`);
+      if (parseInt(existingFaqs[0].count) === 0) {
+        await queryRunner.query(`
+          INSERT INTO "faqs" ("question", "answer", "category", "sortOrder") VALUES
+          ('How do I reset my password?', 'To reset your password, click on your profile icon in the top right corner, navigate to "Account & Security", and select "Change Password". Enter your current password followed by your new password and confirm the change.', 'Account', 1),
+          ('My payment is not reflecting in my account', 'Payment processing may take up to 24 hours. If after 24 hours your payment still does not reflect, please submit a support ticket under "Fee/Payment Issues" with your transaction reference number and proof of payment.', 'Fee/Payment', 2),
+          ('I cannot access my online classes', 'First, ensure you have a stable internet connection. If the issue persists, try clearing your browser cache or using a different browser. If you still cannot access classes, submit a support ticket under "Technical Issues".', 'Technical', 3),
+          ('How can I download my payment receipt?', 'Navigate to "Records" > "Fee Records" in your dashboard. Click on the specific payment entry and select "Download Receipt". The receipt will be downloaded as a PDF file.', 'Fee/Payment', 4),
+          ('How do I update my profile information?', 'Go to "Profile" from the sidebar menu. Click "Edit Profile" to update your personal information such as phone number, address, and emergency contacts. Note that some fields like student ID and name can only be changed by an administrator.', 'Account', 5)
+        `);
+        console.log('✓ Default FAQs seeded');
+      }
+
       for (const table of tables) {
         await queryRunner.query(`ALTER TABLE IF EXISTS "${table}" ENABLE ROW LEVEL SECURITY`);
       }
+      // Enable RLS on new support tables
+      await queryRunner.query(`ALTER TABLE IF EXISTS "support_tickets" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "faqs" ENABLE ROW LEVEL SECURITY`);
       console.log('✓ RLS enabled on all tables');
     } catch (err) {
       console.error('Migration error:', err.message);
