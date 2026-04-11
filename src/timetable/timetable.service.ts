@@ -3,7 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { User, Student, Class, LiveSession } from '../entities';
 import { DailyTimetableDto, TimetableEventDto } from './dto/timetable.dto';
-import * as PDFDocument from 'pdfkit';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const PDFDocumentLib = require('pdfkit');
+const PDFDocument = PDFDocumentLib.default || PDFDocumentLib;
 
 @Injectable()
 export class TimetableService {
