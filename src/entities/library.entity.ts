@@ -92,6 +92,15 @@ export class BookLoan {
     @Column({ type: 'int', nullable: true })
     userRating: number; // 0-5 rating given by student after returning
 
+    @Column({ default: false })
+    isFinePaid: boolean;
+
+    @Column({ nullable: true })
+    fineReceiptId: string;
+
+    @Column({ type: 'timestamp', nullable: true })
+    finePaymentDate: Date;
+
     @CreateDateColumn()
     createdAt: Date;
 }

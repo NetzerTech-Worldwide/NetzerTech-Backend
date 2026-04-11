@@ -134,6 +134,15 @@ export class LibraryController {
         return this.libraryService.getActiveFines(req.user.id);
     }
 
+    @Post('fines/:loanId/pay')
+    @ApiOperation({ summary: 'Pay an outstanding fine and generate a receipt' })
+    async payFine(
+        @Request() req: AuthenticatedRequest,
+        @Param('loanId') loanId: string
+    ) {
+        return this.libraryService.payFine(req.user.id, loanId);
+    }
+
     @Get('fines/history')
     @ApiOperation({ summary: 'Get history of paid or resolved fines' })
     async getFineHistory(@Request() req: AuthenticatedRequest) {

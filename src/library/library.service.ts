@@ -43,9 +43,9 @@ export class LibraryService {
         });
 
         for (const loan of loansWithPotentialFines) {
-            if (loan.status === LoanStatus.RETURNED) {
+            if (loan.status === LoanStatus.RETURNED && loan.isFinePaid === false) {
                 outstandingFines += Number(loan.fineAmount);
-            } else if (now > loan.dueDate) {
+            } else if (loan.status === LoanStatus.ACTIVE && now > loan.dueDate) {
                 // Determine active overdue fine manually
                 const diffTime = Math.abs(now.getTime() - loan.dueDate.getTime());
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
@@ -343,14 +343,13 @@ export class LibraryService {
     // --- Fines ---
     async getActiveFines(studentId: string): Promise<any[]> {
         const now = new Date();
+
+        // 1. Get Active OVERDUE loans
         const activeLoans = await this.loanRepository.find({
             where: { studentId, status: LoanStatus.ACTIVE },
             relations: ['book']
         });
-
-        const overdueLoans = activeLoans.filter(loan => now > loan.dueDate);
-        
-        return overdueLoans.map(loan => {
+        const overdueLoans = activeLoans.filter(loan => now > loan.dueDate).map(loan => {
             const diffTime = Math.abs(now.getTime() - loan.dueDate.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
             const dynamicFine = diffDays * Number(loan.book.lateFineRate);
@@ -361,16 +360,57 @@ export class LibraryService {
                 dynamicFineAmount: dynamicFine
             };
         });
+
+        // 2. Get Returned but UNPAID loans
+        const unpaidReturnedLoans = await this.loanRepository.find({
+            where: { studentId, status: LoanStatus.RETURNED, isFinePaid: false },
+            relations: ['book']
+        });
+
+        const activeUnpaidFines = unpaidReturnedLoans.filter(loan => Number(loan.fineAmount) > 0).map(loan => {
+            // Reconstruct days overdue for the UI context based on the locked fineAmount and rate
+            const daysOverdue = Math.ceil(Number(loan.fineAmount) / Number(loan.book.lateFineRate));
+            return {
+                ...loan,
+                daysOverdue,
+                dynamicFineAmount: Number(loan.fineAmount)
+            };
+        });
+
+        // Combine both
+        return [...overdueLoans, ...activeUnpaidFines].sort((a, b) => b.dynamicFineAmount - a.dynamicFineAmount);
     }
 
     async getFineHistory(studentId: string): Promise<BookLoan[]> {
-        // Return returned loans that incurred a fine
+        // Return returned loans that incurred a fine AND have been paid
         return this.loanRepository.createQueryBuilder('loan')
             .leftJoinAndSelect('loan.book', 'book')
             .where('loan.studentId = :studentId', { studentId })
             .andWhere('loan.status = :status', { status: LoanStatus.RETURNED })
             .andWhere('loan.fineAmount > 0')
-            .orderBy('loan.returnDate', 'DESC')
+            .andWhere('loan.isFinePaid = true')
+            .orderBy('loan.finePaymentDate', 'DESC')
             .getMany();
+    }
+
+    async payFine(studentId: string, loanId: string): Promise<BookLoan> {
+        let loan = await this.loanRepository.findOne({
+            where: { id: loanId, studentId, status: LoanStatus.RETURNED },
+            relations: ['book']
+        });
+
+        if (!loan) throw new NotFoundException('Returned loan not found');
+        if (loan.isFinePaid) throw new BadRequestException('Fine is already paid');
+        if (Number(loan.fineAmount) <= 0) throw new BadRequestException('No fine is due for this loan');
+
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
+        const randomId = Math.floor(1000 + Math.random() * 9000); 
+        
+        loan.isFinePaid = true;
+        loan.finePaymentDate = now;
+        loan.fineReceiptId = `RCP-${dateStr}-${randomId}`;
+
+        return this.loanRepository.save(loan);
     }
 }
