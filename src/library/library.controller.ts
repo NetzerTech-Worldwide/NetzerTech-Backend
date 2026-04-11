@@ -6,7 +6,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { SetReadingGoalDto, SetReminderDto, LibraryStatsDto } from './dto/library.dto';
+import { SetReadingGoalDto, SetReminderDto, LibraryStatsDto, RateBookDto } from './dto/library.dto';
 
 @ApiTags('Library')
 @Controller('library')
@@ -44,9 +44,13 @@ export class LibraryController {
     }
 
     @Get('history')
-    @ApiOperation({ summary: 'Get history of returned books' })
-    async getBorrowHistory(@Request() req: AuthenticatedRequest) {
-        return this.libraryService.getBorrowHistory(req.user.id);
+    @ApiOperation({ summary: 'Get history of borrowed/returned books' })
+    @ApiQuery({ name: 'status', required: false, enum: ['All', 'Active', 'Returned'], description: 'Filter by status' })
+    async getBorrowHistory(
+        @Request() req: AuthenticatedRequest,
+        @Query('status') status?: string
+    ) {
+        return this.libraryService.getBorrowHistory(req.user.id, status);
     }
 
     @Post('borrow/:bookId')
@@ -75,6 +79,16 @@ export class LibraryController {
         @Body() dto: SetReminderDto
     ) {
         return this.libraryService.setReminder(req.user.id, loanId, dto.daysBefore);
+    }
+
+    @Post('rate/:loanId')
+    @ApiOperation({ summary: 'Rate a returned book (1-5)' })
+    async rateBook(
+        @Request() req: AuthenticatedRequest,
+        @Param('loanId') loanId: string,
+        @Body() dto: RateBookDto
+    ) {
+        return this.libraryService.rateLoan(req.user.id, loanId, dto.rating);
     }
 
     // --- Wishlist ---

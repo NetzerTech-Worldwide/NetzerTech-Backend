@@ -31,3 +31,11 @@ export class LibraryStatsDto {
     @ApiProperty({ example: 0 })
     goalRead: number;
 }
+
+export class RateBookDto {
+    @ApiProperty({ description: 'Rating from 1 to 5', example: 5 })
+    @IsNumber()
+    @Min(1)
+    @Max(5)
+    rating: number;
+}

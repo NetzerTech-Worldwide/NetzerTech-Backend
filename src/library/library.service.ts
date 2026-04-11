@@ -179,12 +179,34 @@ export class LibraryService {
         });
     }
 
-    async getBorrowHistory(studentId: string): Promise<BookLoan[]> {
-        return this.loanRepository.find({
-            where: { studentId, status: LoanStatus.RETURNED },
-            relations: ['book'],
-            order: { returnDate: 'DESC' }
+    async getBorrowHistory(studentId: string, status?: string): Promise<BookLoan[]> {
+        const query = this.loanRepository.createQueryBuilder('loan')
+            .leftJoinAndSelect('loan.book', 'book')
+            .where('loan.studentId = :studentId', { studentId });
+
+        if (status && status !== 'All') {
+            query.andWhere('loan.status = :status', { status });
+        }
+
+        return query.orderBy('loan.borrowDate', 'DESC').getMany();
+    }
+
+    async rateLoan(studentId: string, loanId: string, rating: number): Promise<BookLoan> {
+        let loan = await this.loanRepository.findOne({
+            where: { id: loanId, studentId, status: LoanStatus.RETURNED },
+            relations: ['book']
         });
+
+        if (!loan) throw new NotFoundException('Returned loan not found');
+        if (rating < 1 || rating > 5) throw new BadRequestException('Rating must be between 1 and 5');
+
+        loan.userRating = rating;
+        loan = await this.loanRepository.save(loan);
+
+        // Optionally update the book's overall rating here based on all its loans
+        // For now, we just save the student's rating on the loan record.
+
+        return loan;
     }
 
     // --- Wishlist ---

@@ -89,6 +89,9 @@ export class BookLoan {
     @Column({ nullable: true })
     reminderSentDaysBefore: number; // e.g. 1, 3, 7
 
+    @Column({ type: 'int', nullable: true })
+    userRating: number; // 0-5 rating given by student after returning
+
     @CreateDateColumn()
     createdAt: Date;
 }
