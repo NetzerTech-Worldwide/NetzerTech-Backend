@@ -86,84 +86,30 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
-    },
-    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
-    customJs: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js',
-    ],
-    customJsStr: `
-      (function() {
-        var STORAGE_KEY = 'netzer_swagger_jwt';
-
-        // On page load, restore token into Swagger UI if available
-        window.addEventListener('load', function() {
-          var savedToken = localStorage.getItem(STORAGE_KEY);
-          if (savedToken && window.ui) {
-            try {
-              window.ui.authActions.authorize({
-                'JWT-auth': {
-                  name: 'JWT-auth',
-                  schema: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-                  value: savedToken
-                }
-              });
-              console.log('[NetzerAuth] Restored saved token into Swagger UI');
-            } catch(e) { console.warn('[NetzerAuth] Could not restore token:', e); }
-          }
-        });
-
-        // Patch fetch to capture login tokens AND inject auth header
-        var origFetch = window.fetch;
-        window.fetch = function(input, init) {
-          var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
-          
-          // Inject saved token into outgoing requests (if not a login request)
-          if (url.indexOf('/login') === -1) {
-            var token = localStorage.getItem(STORAGE_KEY);
+      // Capture the access token from login responses and store it
+      responseInterceptor: function (response: any) {
+        if (response.url && response.url.indexOf('/login') !== -1 && response.status === 200) {
+          try {
+            var body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+            var token = body && (body.accessToken || body.access_token);
             if (token) {
-              init = init || {};
-              init.headers = init.headers || {};
-              // Only add if not already set
-              if (!init.headers['Authorization'] && !init.headers['authorization']) {
-                init.headers['Authorization'] = 'Bearer ' + token;
-                console.log('[NetzerAuth] Injected Bearer token into request:', url);
-              }
+              (window as any).__netzer_token = token;
+              console.log('[NetzerAuth] Token captured from login response');
             }
-          }
-
-          return origFetch.call(this, input, init).then(function(response) {
-            // Capture token from login responses
-            if (url.indexOf('/login') !== -1 && response.ok) {
-              response.clone().json().then(function(data) {
-                var accessToken = data && (data.accessToken || data.access_token);
-                if (accessToken) {
-                  localStorage.setItem(STORAGE_KEY, accessToken);
-                  console.log('[NetzerAuth] Token captured and saved from login response');
-                  
-                  // Also set in Swagger UI authorize dialog
-                  if (window.ui && window.ui.authActions) {
-                    try {
-                      window.ui.authActions.authorize({
-                        'JWT-auth': {
-                          name: 'JWT-auth',
-                          schema: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-                          value: accessToken
-                        }
-                      });
-                      console.log('[NetzerAuth] Token set in Swagger UI authorize');
-                    } catch(e) {}
-                  }
-                }
-              }).catch(function(e) { console.warn('[NetzerAuth] Parse error:', e); });
-            }
-            return response;
-          });
-        };
-
-        console.log('[NetzerAuth] Swagger auto-auth interceptor installed');
-      })();
-    `,
+          } catch (e) { }
+        }
+        return response;
+      },
+      // Inject the stored token into all outgoing requests
+      requestInterceptor: function (req: any) {
+        var token = (window as any).__netzer_token;
+        if (token && req.url && req.url.indexOf('/login') === -1) {
+          req.headers['Authorization'] = 'Bearer ' + token;
+          console.log('[NetzerAuth] Injected Bearer token into:', req.url);
+        }
+        return req;
+      },
+    },
     customSiteTitle: 'NetzerTech API Docs',
   });
 
