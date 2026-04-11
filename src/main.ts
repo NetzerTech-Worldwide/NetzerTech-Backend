@@ -103,7 +103,8 @@ async function bootstrap() {
           if (url.includes('/login') && response.ok) {
             const clone = response.clone();
             clone.json().then((data) => {
-              if (data && data.access_token) {
+              const token = data.accessToken || data.access_token;
+              if (token) {
                 // Wait briefly for Swagger UI to finish rendering
                 setTimeout(() => {
                   if (window.ui && window.ui.authActions) {
@@ -111,7 +112,7 @@ async function bootstrap() {
                       'JWT-auth': {
                         name: 'JWT-auth',
                         schema: { type: 'http', in: 'header', name: 'Authorization', description: '' },
-                        value: data.access_token
+                        value: token
                       }
                     });
                     console.log('✅ Swagger UI auto-populated with access token!');
