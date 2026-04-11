@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, UseGuards, Request, Query, Res, Header } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiProduces } from '@nestjs/swagger';
 import { TimetableService } from './timetable.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -7,6 +7,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { DailyTimetableDto, TimetableJoinDto } from './dto/timetable.dto';
+import type { Response } from 'express';
 
 @ApiTags('Timetable')
 @Controller('timetable')
@@ -46,5 +47,26 @@ export class TimetableController {
         @Body() joinDto: TimetableJoinDto,
     ): Promise<{ message: string; success: boolean }> {
         return this.timetableService.joinEvent(req.user.id, joinDto);
+    }
+
+    @Get('download')
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Download the weekly timetable as a PDF' })
+    @ApiQuery({ name: 'startDate', required: false, description: 'Start of the week (YYYY-MM-DD). Defaults to current Monday.' })
+    @ApiProduces('application/pdf')
+    @ApiResponse({ status: 200, description: 'PDF file streamed as download' })
+    async downloadTimetable(
+        @Request() req: AuthenticatedRequest,
+        @Res() res: Response,
+        @Query('startDate') startDate?: string,
+    ): Promise<void> {
+        const pdfBuffer = await this.timetableService.generateTimetablePdf(req.user.id, startDate);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="timetable.pdf"',
+            'Content-Length': pdfBuffer.length,
+        });
+        res.end(pdfBuffer);
     }
 }

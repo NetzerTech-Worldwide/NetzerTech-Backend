@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { User, Student, Class, LiveSession } from '../entities';
 import { DailyTimetableDto, TimetableEventDto } from './dto/timetable.dto';
+import * as PDFDocument from 'pdfkit';
 
 @Injectable()
 export class TimetableService {
@@ -166,5 +167,126 @@ export class TimetableService {
         }
 
         return { message: 'Action recorded successfully', success: true };
+    }
+
+    async generateTimetablePdf(userId: string, startDateStr?: string): Promise<Buffer> {
+        // Determine the Monday of the requested week
+        const baseDate = startDateStr ? new Date(startDateStr) : new Date();
+        const dayOfWeek = baseDate.getDay(); // 0=Sun, 1=Mon, ...
+        const monday = new Date(baseDate);
+        monday.setDate(baseDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
+
+        const mondayStr = monday.toISOString().split('T')[0];
+        const fridayStr = friday.toISOString().split('T')[0];
+
+        // Fetch the full week's data
+        const weekSchedule = await this.getRangeSchedule(userId, mondayStr, fridayStr);
+
+        // Fetch student name for the header
+        const user = await this.userRepository.findOne({
+            where: { id: userId },
+            relations: ['student'],
+        });
+        const studentName = user?.student?.fullName || 'Student';
+
+        // Build PDF
+        return new Promise<Buffer>((resolve, reject) => {
+            const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 40 });
+            const chunks: Buffer[] = [];
+
+            doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('error', reject);
+
+            const pageWidth = doc.page.width - 80; // margins
+            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+            // --- Title ---
+            doc.fontSize(20).font('Helvetica-Bold').text('Weekly Timetable', { align: 'center' });
+            doc.moveDown(0.3);
+            doc.fontSize(11).font('Helvetica').text(`${studentName}  •  ${mondayStr} to ${fridayStr}`, { align: 'center' });
+            doc.moveDown(1);
+
+            // --- Table header ---
+            const colWidths = [80, 55, 160, 120, 120, 80, 80]; // Day, Time, Subject, Teacher, Location, Duration, Type
+            const headers = ['Day', 'Time', 'Subject', 'Teacher', 'Location', 'Duration', 'Type'];
+            const headerY = doc.y;
+            let xPos = 40;
+
+            doc.fontSize(9).font('Helvetica-Bold');
+            doc.rect(40, headerY - 4, pageWidth, 18).fill('#1a5276');
+            doc.fill('#ffffff');
+            headers.forEach((h, i) => {
+                doc.text(h, xPos + 4, headerY, { width: colWidths[i] - 8, align: 'left' });
+                xPos += colWidths[i];
+            });
+            doc.fill('#000000');
+            doc.moveDown(0.6);
+
+            // --- Rows ---
+            doc.font('Helvetica').fontSize(8);
+            let rowIndex = 0;
+
+            weekSchedule.forEach((day, dayIdx) => {
+                if (day.events.length === 0) {
+                    // Empty row for the day
+                    const y = doc.y;
+                    const bgColor = rowIndex % 2 === 0 ? '#f2f3f4' : '#ffffff';
+                    doc.rect(40, y - 2, pageWidth, 16).fill(bgColor);
+                    doc.fill('#000000');
+                    xPos = 40;
+                    doc.text(dayNames[dayIdx] || day.date, xPos + 4, y, { width: colWidths[0] - 8 });
+                    xPos += colWidths[0];
+                    doc.text('No classes', xPos + 4, y, { width: 300 });
+                    doc.moveDown(0.7);
+                    rowIndex++;
+                    return;
+                }
+
+                day.events.forEach((event, eventIdx) => {
+                    // Check if we need a new page
+                    if (doc.y > doc.page.height - 60) {
+                        doc.addPage();
+                    }
+
+                    const y = doc.y;
+                    const bgColor = rowIndex % 2 === 0 ? '#f2f3f4' : '#ffffff';
+                    doc.rect(40, y - 2, pageWidth, 16).fill(bgColor);
+                    doc.fill('#000000');
+
+                    xPos = 40;
+                    const timeStr = event.startTime
+                        ? new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                        : '-';
+
+                    const rowData = [
+                        eventIdx === 0 ? (dayNames[dayIdx] || day.date) : '',
+                        timeStr,
+                        event.title || '-',
+                        event.teacherName || '-',
+                        event.location || '-',
+                        event.duration || '-',
+                        event.category || '-',
+                    ];
+
+                    rowData.forEach((text, i) => {
+                        doc.text(text, xPos + 4, y, { width: colWidths[i] - 8, align: 'left' });
+                        xPos += colWidths[i];
+                    });
+
+                    doc.moveDown(0.7);
+                    rowIndex++;
+                });
+            });
+
+            // Footer
+            doc.moveDown(1);
+            doc.fontSize(7).fillColor('#888888').text(`Generated on ${new Date().toLocaleString()}`, { align: 'right' });
+
+            doc.end();
+        });
     }
 }
