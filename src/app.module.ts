@@ -16,6 +16,7 @@ import { TimetableModule } from './timetable/timetable.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './profile/profile.module';
 import { AdminModule } from './admin/admin.module';
+import { SupportModule } from './support/support.module';
 import {
   User,
   Student,
@@ -48,6 +49,8 @@ import {
   Reminder,
   ActivityLog,
 } from './entities';
+import { SupportTicket } from './entities/support-ticket.entity';
+import { Faq } from './entities/faq.entity';
 
 @Module({
   imports: [
@@ -108,6 +111,8 @@ import {
             AcademicProgress,
             Reminder,
             ActivityLog,
+            SupportTicket,
+            Faq,
           ],
           synchronize: configService.get('NODE_ENV') === 'development',
           logging: configService.get('NODE_ENV') === 'development',
@@ -174,6 +179,7 @@ import {
     AttendanceModule,
     ProfileModule,
     AdminModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [

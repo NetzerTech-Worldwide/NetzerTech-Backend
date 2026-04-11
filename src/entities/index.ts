@@ -29,3 +29,5 @@ export { Reminder } from './reminder.entity';
 export { BlacklistedToken } from './blacklisted-token.entity';
 export { ActivityLog, ActivityType } from './activity-log.entity';
 export { StudentClassRegistration } from './student-class-registration.entity';
+export { SupportTicket, TicketStatus, TicketCategory } from './support-ticket.entity';
+export { Faq } from './faq.entity';
