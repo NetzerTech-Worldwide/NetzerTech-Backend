@@ -177,6 +177,10 @@ export class DatabaseSeeder {
           "status" varchar NOT NULL DEFAULT 'Active',
           "fineAmount" decimal(10,2) DEFAULT 0,
           "reminderSentDaysBefore" integer,
+          "userRating" integer,
+          "isFinePaid" boolean DEFAULT false,
+          "fineReceiptId" varchar,
+          "finePaymentDate" timestamp,
           "createdAt" timestamp DEFAULT now()
         )
       `);
