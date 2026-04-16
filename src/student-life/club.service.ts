@@ -186,7 +186,7 @@ export class ClubService {
         });
 
         await this.studentClubRepository.save(membership);
-        return { message: \`Successfully joined \${club.name}!\` };
+        return { message: "Successfully joined " + club.name + "!" };
     }
 
     async leaveClub(userId: string, clubId: string) {
@@ -238,7 +238,7 @@ export class ClubService {
         });
 
         await this.studentClubEventRepository.save(attendance);
-        return { message: \`Successfully registered for \${event.title}!\` };
+        return { message: "Successfully registered for " + event.title + "!" };
     }
 
     async getClubDetails(userId: string, clubId: string): Promise<ClubDetailDto> {
