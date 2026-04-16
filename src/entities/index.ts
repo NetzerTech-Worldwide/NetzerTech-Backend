@@ -32,3 +32,8 @@ export { StudentClassRegistration } from './student-class-registration.entity';
 export { SupportTicket, TicketStatus, TicketCategory } from './support-ticket.entity';
 export { Faq } from './faq.entity';
 export * from './library.entity';
+export * from './club.entity';
+export * from './student-club.entity';
+export * from './club-event.entity';
+export * from './student-club-event.entity';
+export * from './club-announcement.entity';

@@ -18,6 +18,7 @@ import { ProfileModule } from './profile/profile.module';
 import { AdminModule } from './admin/admin.module';
 import { SupportModule } from './support/support.module';
 import { LibraryModule } from './library/library.module';
+import { StudentLifeModule } from './student-life/student-life.module';
 import {
   User,
   Student,
@@ -59,6 +60,13 @@ import {
   BookWishlist, 
   ReadingGoal 
 } from './entities/library.entity';
+import {
+  Club,
+  StudentClub,
+  ClubEvent,
+  StudentClubEvent,
+  ClubAnnouncement
+} from './entities';
 
 @Module({
   imports: [
@@ -126,6 +134,11 @@ import {
             BookReservation, 
             BookWishlist, 
             ReadingGoal,
+            Club,
+            StudentClub,
+            ClubEvent,
+            StudentClubEvent,
+            ClubAnnouncement,
           ],
           synchronize: configService.get('NODE_ENV') === 'development',
           logging: configService.get('NODE_ENV') === 'development',
@@ -194,6 +207,7 @@ import {
     AdminModule,
     SupportModule,
     LibraryModule,
+    StudentLifeModule,
   ],
   controllers: [AppController],
   providers: [

@@ -227,6 +227,73 @@ export class DatabaseSeeder {
       await queryRunner.query(`ALTER TABLE IF EXISTS "book_reservations" ENABLE ROW LEVEL SECURITY`);
       await queryRunner.query(`ALTER TABLE IF EXISTS "book_wishlists" ENABLE ROW LEVEL SECURITY`);
 
+      // -- Student Life (Club) tables --
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "clubs" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "name" varchar NOT NULL,
+          "description" text NOT NULL,
+          "meetingDay" varchar NOT NULL,
+          "meetingTime" varchar,
+          "advisorName" varchar,
+          "status" varchar NOT NULL DEFAULT 'pending',
+          "created_by_id" uuid REFERENCES "students"("id") ON DELETE SET NULL,
+          "createdAt" timestamp DEFAULT now(),
+          "updatedAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "student_clubs" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "student_id" uuid REFERENCES "students"("id") ON DELETE CASCADE,
+          "club_id" uuid REFERENCES "clubs"("id") ON DELETE CASCADE,
+          "role" varchar NOT NULL DEFAULT 'Member',
+          "creditsEarned" integer DEFAULT 0,
+          "joinedAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "club_events" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "club_id" uuid REFERENCES "clubs"("id") ON DELETE CASCADE,
+          "title" varchar NOT NULL,
+          "description" text,
+          "date" date NOT NULL,
+          "startTime" varchar NOT NULL,
+          "endTime" varchar NOT NULL,
+          "location" varchar NOT NULL,
+          "createdAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "student_club_events" (
+          "student_id" uuid REFERENCES "students"("id") ON DELETE CASCADE,
+          "event_id" uuid REFERENCES "club_events"("id") ON DELETE CASCADE,
+          "joinedAt" timestamp DEFAULT now(),
+          PRIMARY KEY ("student_id", "event_id")
+        )
+      `);
+
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS "club_announcements" (
+          "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          "club_id" uuid REFERENCES "clubs"("id") ON DELETE CASCADE,
+          "title" varchar NOT NULL,
+          "content" text NOT NULL,
+          "postedBy" varchar NOT NULL,
+          "createdAt" timestamp DEFAULT now()
+        )
+      `);
+
+      await queryRunner.query(`ALTER TABLE IF EXISTS "clubs" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "student_clubs" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "club_events" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "student_club_events" ENABLE ROW LEVEL SECURITY`);
+      await queryRunner.query(`ALTER TABLE IF EXISTS "club_announcements" ENABLE ROW LEVEL SECURITY`);
+
       console.log('✓ RLS enabled on all tables');
     } catch (err) {
       console.error('Migration error:', err.message);
