@@ -187,12 +187,75 @@ export class AttendanceService {
         };
     }
 
-    async getLeaveRequests(userId: string) {
+    async getLeaveRequestStats(userId: string) {
         const student = await this.getStudent(userId);
-        return this.leaveRequestRepository.find({
-            where: { student: { id: student.id } },
-            order: { createdAt: 'DESC' }
+        const stats = await this.leaveRequestRepository
+            .createQueryBuilder('lr')
+            .select('lr.status', 'status')
+            .addSelect('COUNT(lr.id)', 'count')
+            .where('lr.student_id = :studentId', { studentId: student.id })
+            .groupBy('lr.status')
+            .getRawMany();
+
+        const result = { total: 0, pending: 0, approved: 0, rejected: 0 };
+        stats.forEach(s => {
+            const count = parseInt(s.count, 10);
+            result.total += count;
+            if (s.status === 'pending') result.pending += count;
+            else if (s.status === 'approved') result.approved += count;
+            else if (s.status === 'rejected') result.rejected += count;
         });
+
+        return result;
+    }
+
+    async getLeaveRequests(userId: string, status?: string) {
+        const student = await this.getStudent(userId);
+        
+        const query = this.leaveRequestRepository.createQueryBuilder('lr')
+            .leftJoinAndSelect('lr.reviewedBy', 'admin')
+            .where('lr.student_id = :studentId', { studentId: student.id });
+
+        if (status && status !== 'All') {
+            query.andWhere('lr.status = :status', { status: status.toLowerCase() });
+        }
+
+        query.orderBy('lr.createdAt', 'DESC');
+
+        const requests = await query.getMany();
+
+        return requests.map(r => ({
+            id: r.id,
+            requestType: r.leaveType,
+            dateSubmitted: r.createdAt.toISOString().split('T')[0],
+            leaveDate: r.fromDate instanceof Date ? r.fromDate.toISOString().split('T')[0] : r.fromDate,
+            returnDate: r.toDate instanceof Date ? r.toDate.toISOString().split('T')[0] : r.toDate,
+            status: r.status,
+            approvedBy: r.reviewedBy ? r.reviewedBy.fullName : (r.status === 'pending' ? 'In Progress' : 'Admin'),
+        }));
+    }
+
+    async getLeaveRequestById(userId: string, id: string) {
+        const student = await this.getStudent(userId);
+        const r = await this.leaveRequestRepository.findOne({
+            where: { id, student: { id: student.id } },
+            relations: ['reviewedBy']
+        });
+
+        if (!r) throw new NotFoundException('Leave request not found');
+
+        return {
+            id: r.id,
+            requestType: r.leaveType,
+            dateSubmitted: r.createdAt.toISOString().split('T')[0],
+            leaveDate: r.fromDate instanceof Date ? r.fromDate.toISOString().split('T')[0] : r.fromDate,
+            returnDate: r.toDate instanceof Date ? r.toDate.toISOString().split('T')[0] : r.toDate,
+            status: r.status,
+            approvedBy: r.reviewedBy ? r.reviewedBy.fullName : (r.status === 'pending' ? 'In Progress' : 'Admin'),
+            reason: r.reason,
+            adminComments: r.reviewerComments,
+            supportingDocumentUrl: r.supportingDocumentUrl
+        };
     }
 
     async createLeaveRequest(userId: string, dto: CreateLeaveRequestDto) {

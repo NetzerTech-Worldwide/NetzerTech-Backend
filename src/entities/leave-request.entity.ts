@@ -17,10 +17,12 @@ export enum LeaveRequestStatus {
 }
 
 export enum LeaveType {
-    SICK = 'sick',
-    PERSONAL = 'personal',
-    MEDICAL = 'medical',
-    OTHER = 'other',
+    SICK_LEAVE = 'Sick Leave',
+    PERSONAL_LEAVE = 'Personal Leave',
+    FAMILY_EVENT = 'Family Event',
+    EARLY_DISMISSAL = 'Early Dismissal',
+    MEDICAL_APPOINTMENT = 'Medical Appointment',
+    OTHER = 'Other',
 }
 
 @Entity('leave_requests')
@@ -43,6 +45,9 @@ export class LeaveRequest {
 
     @Column('text')
     reason: string;
+
+    @Column({ nullable: true })
+    supportingDocumentUrl: string;
 
     @Column({
         type: 'enum',

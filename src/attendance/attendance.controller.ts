@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Request, Query, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import { AttendanceService } from './attendance.service';
-import { CreateLeaveRequestDto } from './dto/attendance.dto';
+import { CreateLeaveRequestDto, LeaveRequestStatsDto, LeaveRequestDetailDto } from './dto/attendance.dto';
 
 @ApiTags('attendance')
 @Controller('attendance')
@@ -68,11 +68,35 @@ export class AttendanceController {
         });
     }
 
+    @Get('leave-requests/stats')
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Get total, pending, approved, and rejected leave request counts' })
+    @ApiResponse({ status: 200, type: LeaveRequestStatsDto })
+    async getLeaveRequestStats(@Request() req) {
+        return this.attendanceService.getLeaveRequestStats(req.user.id);
+    }
+
     @Get('leave-requests')
     @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
-    @ApiOperation({ summary: 'Get all active leave requests for a student' })
-    async getLeaveRequests(@Request() req) {
-        return this.attendanceService.getLeaveRequests(req.user.id);
+    @ApiOperation({ summary: 'Get all leave requests for a student' })
+    @ApiQuery({ name: 'status', required: false, description: 'Filter by status (All, pending, approved, rejected)' })
+    @ApiResponse({ status: 200, type: [LeaveRequestDetailDto] })
+    async getLeaveRequests(
+        @Request() req,
+        @Query('status') status?: string,
+    ) {
+        return this.attendanceService.getLeaveRequests(req.user.id, status);
+    }
+
+    @Get('leave-requests/:id')
+    @Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+    @ApiOperation({ summary: 'Get a single leave request detail' })
+    @ApiResponse({ status: 200, type: LeaveRequestDetailDto })
+    async getLeaveRequestById(
+        @Request() req,
+        @Param('id') id: string,
+    ) {
+        return this.attendanceService.getLeaveRequestById(req.user.id, id);
     }
 
     @Post('leave-requests')

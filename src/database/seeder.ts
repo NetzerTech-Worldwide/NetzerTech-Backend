@@ -44,6 +44,7 @@ export class DatabaseSeeder {
           "reason" text NOT NULL,
           "status" varchar NOT NULL DEFAULT 'pending',
           "reviewerComments" text,
+          "supportingDocumentUrl" varchar,
           "student_id" uuid REFERENCES "students"("id"),
           "reviewed_by_id" uuid REFERENCES "admins"("id"),
           "createdAt" timestamp DEFAULT now(),
