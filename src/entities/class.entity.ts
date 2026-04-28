@@ -52,6 +52,9 @@ export class Class {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  school: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

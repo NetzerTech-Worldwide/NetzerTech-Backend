@@ -39,7 +39,10 @@ export class AdminService {
 
     async getClassesOverview(adminId?: string): Promise<AdminClassOverviewDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
-        const classes = await this.classRepository.find({ relations: ['teacher', 'students', 'students.user'] });
+        const classes = await this.classRepository.find({ 
+            where: schoolName ? { school: schoolName } : {},
+            relations: ['teacher', 'students', 'students.user'] 
+        });
         const results: AdminClassOverviewDto[] = [];
 
         for (const cls of classes) {
@@ -104,8 +107,10 @@ export class AdminService {
         });
     }
 
-    async getTeachers(): Promise<AdminTeacherDto[]> {
+    async getTeachers(adminId?: string): Promise<AdminTeacherDto[]> {
+        const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
         const teachers = await this.teacherRepository.find({
+            where: schoolName ? { school: schoolName } : {},
             relations: ['user', 'classes']
         });
 
@@ -127,8 +132,10 @@ export class AdminService {
         });
     }
 
-    async getParents(): Promise<AdminParentDto[]> {
+    async getParents(adminId?: string): Promise<AdminParentDto[]> {
+        const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
         const parents = await this.parentRepository.find({
+            where: schoolName ? { children: { school: schoolName } } : {},
             relations: ['user', 'children']
         });
 
@@ -224,8 +231,22 @@ export class AdminService {
             });
             studentUser = await queryRunner.manager.save(User, studentUser);
 
-            // 3. Find Class
-            const studentClass = await queryRunner.manager.findOne(Class, { where: { title: dto.class } });
+            // 3. Find or Create Class (Scoped by School)
+            let studentClass = await queryRunner.manager.findOne(Class, { 
+                where: { title: dto.class, school: schoolName } 
+            });
+
+            if (!studentClass) {
+                // Auto-create class if it doesn't exist for this school
+                studentClass = this.classRepository.create({
+                    title: dto.class,
+                    subject: 'General', // Default subject
+                    startTime: new Date(),
+                    endTime: new Date(),
+                    school: schoolName
+                });
+                studentClass = await queryRunner.manager.save(Class, studentClass);
+            }
 
             // Generate unique student ID (Scoped by School)
             let studentId: string;
@@ -305,11 +326,12 @@ export class AdminService {
         }
     }
 
-    async getSystemUsers(): Promise<AdminSystemUserDto[]> {
+    async getSystemUsers(adminId?: string): Promise<AdminSystemUserDto[]> {
+        const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
         const users = await this.userRepository.find({
             where: [
-                { userType: UserRole.ADMIN },
-                { userType: UserRole.TEACHER }
+                { userType: UserRole.ADMIN, admin: schoolName ? { address: Like(`%${schoolName}%`) } : {} },
+                { userType: UserRole.TEACHER, teacher: schoolName ? { school: schoolName } : {} }
             ],
             relations: ['admin', 'teacher']
         });
@@ -347,22 +369,31 @@ export class AdminService {
         });
     }
 
-    async getDashboardStats() {
+    async getDashboardStats(adminId?: string) {
+        const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
+
         const [studentCount, teacherCount, parentCount, classCount] = await Promise.all([
-            this.studentRepository.count(),
-            this.teacherRepository.count(),
-            this.parentRepository.count(),
-            this.classRepository.count(),
+            this.studentRepository.count({ where: schoolName ? { school: schoolName } : {} }),
+            this.teacherRepository.count({ where: schoolName ? { school: schoolName } : {} }),
+            this.parentRepository.count({ 
+                where: schoolName ? { children: { school: schoolName } } : {} 
+            }),
+            this.classRepository.count({ where: schoolName ? { school: schoolName } : {} }),
         ]);
 
         const recentUsers = await this.userRepository.find({
+            where: schoolName ? [
+                { student: { school: schoolName } },
+                { teacher: { school: schoolName } }
+            ] : {},
             order: { createdAt: 'DESC' },
-            take: 5
+            take: 5,
+            relations: ['student', 'teacher']
         });
 
         const recentActivities = recentUsers.map(user => ({
             action: `New ${user.userType.toLowerCase()} registered`,
-            name: user.fullName,
+            name: user.student?.fullName || user.teacher?.fullName || user.email,
             time: this.formatTimeAgo(user.createdAt)
         }));
 

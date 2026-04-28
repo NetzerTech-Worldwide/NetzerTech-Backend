@@ -84,8 +84,8 @@ export class AdminController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all teachers' })
   @ApiResponse({ status: 200, type: [AdminTeacherDto] })
-  async getTeachers() {
-      return this.adminService.getTeachers();
+  async getTeachers(@Request() req) {
+      return this.adminService.getTeachers(req.user.id);
   }
 
   @Get('parents')
@@ -94,8 +94,8 @@ export class AdminController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all parents' })
   @ApiResponse({ status: 200, type: [AdminParentDto] })
-  async getParents() {
-      return this.adminService.getParents();
+  async getParents(@Request() req) {
+      return this.adminService.getParents(req.user.id);
   }
 
   @Get('system-users')
@@ -104,8 +104,8 @@ export class AdminController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all system users (admins and staff)' })
   @ApiResponse({ status: 200, type: [AdminSystemUserDto] })
-  async getSystemUsers() {
-      return this.adminService.getSystemUsers();
+  async getSystemUsers(@Request() req) {
+      return this.adminService.getSystemUsers(req.user.id);
   }
 
   @Get('dashboard-stats')
@@ -113,7 +113,7 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get dashboard statistics' })
-  async getDashboardStats() {
-      return this.adminService.getDashboardStats();
+  async getDashboardStats(@Request() req) {
+      return this.adminService.getDashboardStats(req.user.id);
   }
 }
