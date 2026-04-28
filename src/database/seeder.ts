@@ -380,7 +380,7 @@ export class DatabaseSeeder {
         employeeId: 'ADM001',
         department: 'IT',
         phoneNumber: '+1234567890',
-        address: '123 Admin Street',
+        address: 'NetzerTech High School (Size: 100-500)',
         isSuperAdmin: true,
         user: savedUser,
       });
