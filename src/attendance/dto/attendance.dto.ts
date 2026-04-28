@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsEmail, IsOptional, IsNotEmpty, IsEnum, IsDateString } from 'class-validator';
 import { LeaveType } from '../../entities/leave-request.entity';
 
 export class AttendanceOverviewDto {
@@ -26,18 +27,28 @@ export class AttendanceOverviewDto {
 
 export class CreateLeaveRequestDto {
     @ApiProperty({ enum: LeaveType })
+    @IsEnum(LeaveType)
+    @IsNotEmpty()
     leaveType: LeaveType;
 
     @ApiProperty()
+    @IsDateString()
+    @IsNotEmpty()
     fromDate: string;
 
     @ApiProperty()
+    @IsDateString()
+    @IsNotEmpty()
     toDate: string;
 
     @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
     reason: string;
 
     @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
     supportingDocumentUrl?: string;
 }
 
@@ -89,9 +100,13 @@ export class LeaveRequestDetailDto {
 
 export class UpdateLeaveRequestDto {
     @ApiProperty({ enum: ['pending', 'approved', 'rejected'] })
+    @IsString()
+    @IsNotEmpty()
     status: string;
 
     @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
     adminComments?: string;
 }
 
