@@ -9,6 +9,7 @@ import {
   ManyToMany,
   OneToMany,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Parent } from './parent.entity';
@@ -27,14 +28,16 @@ import { StudentAssignment } from './student-assignment.entity';
 import { StudentBill } from './student-bill.entity';
 
 @Entity('students')
+@Unique(['studentId', 'school'])
+@Unique(['matricNumber', 'school'])
 export class Student {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   studentId: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ nullable: true })
   matricNumber: string;
 
   @Column()

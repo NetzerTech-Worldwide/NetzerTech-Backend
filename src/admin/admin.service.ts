@@ -131,12 +131,25 @@ export class AdminService {
         });
     }
 
-    async createStudentWithParent(dto: CreateStudentWithParentDto) {
+    async createStudentWithParent(dto: CreateStudentWithParentDto, adminId?: string) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
+            // Get Admin's school name if adminId is provided
+            let schoolName = 'NetzerTech School';
+            if (adminId) {
+                const admin = await queryRunner.manager.findOne(Admin, { 
+                    where: { user: { id: adminId } },
+                    relations: ['user']
+                });
+                if (admin && admin.address) {
+                    // Extract school name: "NetzerTech High School (Size: 100-500)" -> "NetzerTech High School"
+                    schoolName = admin.address.split(' (Size:')[0];
+                }
+            }
+
             // 1. Handle Parent User
             let parentUser = await queryRunner.manager.findOne(User, { 
                 where: { email: dto.parentEmail },
@@ -197,14 +210,16 @@ export class AdminService {
             // 3. Find Class
             const studentClass = await queryRunner.manager.findOne(Class, { where: { title: dto.class } });
 
-            // Generate unique student ID
+            // Generate unique student ID (Scoped by School)
             let studentId: string;
             
             if (dto.studentId) {
-                // Use provided ID if it's unique
-                const existing = await queryRunner.manager.findOne(Student, { where: { studentId: dto.studentId } });
+                // Use provided ID if it's unique FOR THIS SCHOOL
+                const existing = await queryRunner.manager.findOne(Student, { 
+                    where: { studentId: dto.studentId, school: schoolName } 
+                });
                 if (existing) {
-                    throw new Error(`Student ID ${dto.studentId} is already in use.`);
+                    throw new Error(`Student ID ${dto.studentId} is already in use at your school.`);
                 }
                 studentId = dto.studentId;
             } else {
@@ -212,9 +227,10 @@ export class AdminService {
                 const currentYear = new Date().getFullYear();
                 const prefix = `STU${currentYear}`;
                 
-                // Find the latest student ID with this prefix to determine the next sequence number
+                // Find the latest student ID for THIS SCHOOL with this prefix
                 const latestStudent = await queryRunner.manager.createQueryBuilder(Student, 'student')
                     .where('student.studentId LIKE :prefix', { prefix: `${prefix}%` })
+                    .andWhere('student.school = :schoolName', { schoolName })
                     .orderBy('student.studentId', 'DESC')
                     .getOne();
 
@@ -231,7 +247,9 @@ export class AdminService {
                 let isUnique = false;
                 while (!isUnique) {
                     studentId = `${prefix}${sequence.toString().padStart(3, '0')}`;
-                    const existing = await queryRunner.manager.findOne(Student, { where: { studentId } });
+                    const existing = await queryRunner.manager.findOne(Student, { 
+                        where: { studentId, school: schoolName } 
+                    });
                     if (!existing) {
                         isUnique = true;
                     } else {
@@ -247,6 +265,7 @@ export class AdminService {
                 dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
                 parent: parent,
                 user: studentUser,
+                school: schoolName, // SAVE WITH SCHOOL NAME
                 classes: studentClass ? [studentClass] : [],
                 admissionDate: new Date()
             });

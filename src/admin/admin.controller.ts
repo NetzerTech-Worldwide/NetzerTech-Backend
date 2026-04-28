@@ -74,8 +74,8 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new student and their parent/guardian' })
-  async createStudentWithParent(@Body() dto: CreateStudentWithParentDto) {
-      return this.adminService.createStudentWithParent(dto);
+  async createStudentWithParent(@Request() req, @Body() dto: CreateStudentWithParentDto) {
+      return this.adminService.createStudentWithParent(dto, req.user.id);
   }
 
   @Get('teachers')
