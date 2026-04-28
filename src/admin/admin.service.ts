@@ -137,27 +137,59 @@ export class AdminService {
         await queryRunner.startTransaction();
 
         try {
-            // 1. Create Parent User (check if exists first by email, but here we assume new)
-            // Ideally we'd generate a password or have an auth flow, but we mock it here.
-            let parentUser = this.userRepository.create({
-                email: dto.parentEmail,
-                password: 'defaultPassword123!', // Should be hashed in a real app or sent via email
-                userType: UserRole.PARENT,
-                fullName: `${dto.parentFirstName} ${dto.parentLastName}`
+            // 1. Handle Parent User
+            let parentUser = await queryRunner.manager.findOne(User, { 
+                where: { email: dto.parentEmail },
+                relations: ['parent']
             });
-            parentUser = await queryRunner.manager.save(User, parentUser);
 
-            const parent = this.parentRepository.create({
-                fullName: parentUser.fullName,
-                phoneNumber: dto.parentPhone,
-                occupation: dto.parentOccupation,
-                residentialAddress: dto.parentAddress,
-                user: parentUser
-            });
-            await queryRunner.manager.save(Parent, parent);
+            let parent: Parent;
 
-            // 2. Create Student User
+            if (parentUser) {
+                // If user exists but is not a parent (e.g. they are a teacher), this might be a problem in a real app,
+                // but for now we assume a user with this email should be a parent.
+                if (parentUser.parent) {
+                    parent = parentUser.parent;
+                } else {
+                    // Create parent profile for existing user
+                    parent = this.parentRepository.create({
+                        fullName: parentUser.fullName,
+                        phoneNumber: dto.parentPhone,
+                        occupation: dto.parentOccupation,
+                        residentialAddress: dto.parentAddress,
+                        user: parentUser
+                    });
+                    parent = await queryRunner.manager.save(Parent, parent);
+                }
+            } else {
+                // Create NEW Parent User
+                parentUser = this.userRepository.create({
+                    email: dto.parentEmail,
+                    password: 'defaultPassword123!', // Should be hashed in a real app
+                    userType: UserRole.PARENT,
+                    fullName: `${dto.parentFirstName} ${dto.parentLastName}`
+                });
+                parentUser = await queryRunner.manager.save(User, parentUser);
+
+                parent = this.parentRepository.create({
+                    fullName: parentUser.fullName,
+                    phoneNumber: dto.parentPhone,
+                    occupation: dto.parentOccupation,
+                    residentialAddress: dto.parentAddress,
+                    user: parentUser
+                });
+                parent = await queryRunner.manager.save(Parent, parent);
+            }
+
+            // 2. Handle Student User
             const studentEmail = dto.studentEmail || `${dto.studentFirstName.toLowerCase()}.${dto.studentLastName.toLowerCase()}@student.netzertech.edu.ng`;
+            
+            // Check if student user already exists
+            const existingStudentUser = await queryRunner.manager.findOne(User, { where: { email: studentEmail } });
+            if (existingStudentUser) {
+                throw new Error(`A user with email ${studentEmail} already exists.`);
+            }
+
             let studentUser = this.userRepository.create({
                 email: studentEmail,
                 password: 'defaultPassword123!',
@@ -169,10 +201,24 @@ export class AdminService {
             // 3. Find Class
             const studentClass = await queryRunner.manager.findOne(Class, { where: { title: dto.class } });
 
-            const studentId = `STU${Math.floor(10000 + Math.random() * 90000)}`;
+            // Generate unique student ID (ideally check for uniqueness in DB)
+            let studentId: string;
+            let isUnique = false;
+            let attempts = 0;
+            
+            while (!isUnique && attempts < 10) {
+                studentId = `STU${Math.floor(10000 + Math.random() * 90000)}`;
+                const existing = await queryRunner.manager.findOne(Student, { where: { studentId } });
+                if (!existing) isUnique = true;
+                attempts++;
+            }
+
+            if (!isUnique) {
+                throw new Error('Failed to generate a unique student ID after multiple attempts.');
+            }
 
             const student = this.studentRepository.create({
-                studentId,
+                studentId: studentId!,
                 fullName: studentUser.fullName,
                 gender: dto.gender,
                 dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
