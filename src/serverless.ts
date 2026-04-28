@@ -12,30 +12,8 @@ async function bootstrap() {
 
         app.setGlobalPrefix('api/v1');
 
-        const corsOriginsEnv = process.env.CORS_ORIGINS;
-        const allowAllOrigins = !corsOriginsEnv || corsOriginsEnv === '*' || corsOriginsEnv === 'all';
-
-        const defaultOrigins = [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://localhost:5173',
-            'http://localhost:4200',
-            'https://admin.netzertech.co',
-            'https://student.netzertech.co',
-        ];
-
-        const allowedOrigins = corsOriginsEnv && corsOriginsEnv !== '*'
-            ? corsOriginsEnv.split(',').map((origin) => origin.trim())
-            : defaultOrigins;
-
         app.enableCors({
-            origin: allowAllOrigins ? true : (origin: string, callback: any) => {
-                if (!origin || allowedOrigins.includes(origin)) {
-                    callback(null, true);
-                } else {
-                    callback(new Error('Not allowed by CORS'));
-                }
-            },
+            origin: true,
             credentials: true,
             methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
             allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Origin',
