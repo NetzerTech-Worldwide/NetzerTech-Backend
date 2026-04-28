@@ -201,20 +201,47 @@ export class AdminService {
             // 3. Find Class
             const studentClass = await queryRunner.manager.findOne(Class, { where: { title: dto.class } });
 
-            // Generate unique student ID (ideally check for uniqueness in DB)
+            // Generate unique student ID
             let studentId: string;
-            let isUnique = false;
-            let attempts = 0;
             
-            while (!isUnique && attempts < 10) {
-                studentId = `STU${Math.floor(10000 + Math.random() * 90000)}`;
-                const existing = await queryRunner.manager.findOne(Student, { where: { studentId } });
-                if (!existing) isUnique = true;
-                attempts++;
-            }
+            if (dto.studentId) {
+                // Use provided ID if it's unique
+                const existing = await queryRunner.manager.findOne(Student, { where: { studentId: dto.studentId } });
+                if (existing) {
+                    throw new Error(`Student ID ${dto.studentId} is already in use.`);
+                }
+                studentId = dto.studentId;
+            } else {
+                // Auto-generate in format STU[YEAR][SEQ] e.g. STU2026001
+                const currentYear = new Date().getFullYear();
+                const prefix = `STU${currentYear}`;
+                
+                // Find the latest student ID with this prefix to determine the next sequence number
+                const latestStudent = await queryRunner.manager.createQueryBuilder(Student, 'student')
+                    .where('student.studentId LIKE :prefix', { prefix: `${prefix}%` })
+                    .orderBy('student.studentId', 'DESC')
+                    .getOne();
 
-            if (!isUnique) {
-                throw new Error('Failed to generate a unique student ID after multiple attempts.');
+                let sequence = 1;
+                if (latestStudent && latestStudent.studentId) {
+                    const lastSeqStr = latestStudent.studentId.replace(prefix, '');
+                    const lastSeq = parseInt(lastSeqStr);
+                    if (!isNaN(lastSeq)) {
+                        sequence = lastSeq + 1;
+                    }
+                }
+
+                // Ensure it's unique by checking and incrementing if needed (safety net)
+                let isUnique = false;
+                while (!isUnique) {
+                    studentId = `${prefix}${sequence.toString().padStart(3, '0')}`;
+                    const existing = await queryRunner.manager.findOne(Student, { where: { studentId } });
+                    if (!existing) {
+                        isUnique = true;
+                    } else {
+                        sequence++;
+                    }
+                }
             }
 
             const student = this.studentRepository.create({

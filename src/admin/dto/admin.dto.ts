@@ -109,6 +109,11 @@ export class AdminParentDto {
 }
 
 export class CreateStudentWithParentDto {
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    studentId?: string;
+
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
