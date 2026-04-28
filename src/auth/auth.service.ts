@@ -544,8 +544,10 @@ export class AuthService {
     await this.adminRepository.save(newAdmin);
 
     // Send email to NetzerTech owners
-    // The recipient should ideally be an environment variable, but we'll use a default for now.
-    const recipient = this.configService.get<string>('ADMIN_NOTIFICATION_EMAIL', 'founders@netzertech.com');
+    // The recipient should ideally be an environment variable, but we'll use RESEND_FROM_EMAIL as requested.
+    const recipient = this.configService.get<string>('ADMIN_NOTIFICATION_EMAIL') || 
+                      this.configService.get<string>('RESEND_FROM_EMAIL') || 
+                      'founders@netzertech.com';
     await this.mailService.sendSchoolSignUpNotification(recipient, {
       schoolName,
       email,
