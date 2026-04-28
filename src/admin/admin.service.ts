@@ -241,4 +241,44 @@ export class AdminService {
             };
         });
     }
+
+    async getDashboardStats() {
+        const [studentCount, teacherCount, parentCount, classCount] = await Promise.all([
+            this.studentRepository.count(),
+            this.teacherRepository.count(),
+            this.parentRepository.count(),
+            this.classRepository.count(),
+        ]);
+
+        const recentUsers = await this.userRepository.find({
+            order: { createdAt: 'DESC' },
+            take: 5
+        });
+
+        const recentActivities = recentUsers.map(user => ({
+            action: `New ${user.userType.toLowerCase()} registered`,
+            name: user.fullName,
+            time: this.formatTimeAgo(user.createdAt)
+        }));
+
+        return {
+            stats: [
+                { label: 'Total Students', value: studentCount.toString(), change: '+0%', up: true, icon: 'Users', color: '#1B6B8A', bg: '#E8F4F8' },
+                { label: 'Total Teachers', value: teacherCount.toString(), change: '+0%', up: true, icon: 'GraduationCap', color: '#22C55E', bg: '#ECFDF5' },
+                { label: 'Total Parents', value: parentCount.toString(), change: '+0%', up: true, icon: 'UserCheck', color: '#F59E0B', bg: '#FEF9C3' },
+                { label: 'Total Classes', value: classCount.toString(), change: '+0%', up: true, icon: 'BookOpen', color: '#8B5CF6', bg: '#F3E8FF' },
+            ],
+            recentActivities
+        };
+    }
+
+    private formatTimeAgo(date: Date): string {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    }
 }

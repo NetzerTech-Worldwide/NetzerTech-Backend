@@ -107,4 +107,13 @@ export class AdminController {
   async getSystemUsers() {
       return this.adminService.getSystemUsers();
   }
+
+  @Get('dashboard-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get dashboard statistics' })
+  async getDashboardStats() {
+      return this.adminService.getDashboardStats();
+  }
 }

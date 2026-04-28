@@ -508,16 +508,16 @@ export class AuthService {
   }
 
   async registerSchool(signupDto: SchoolSignupDto) {
-    const { email, password, schoolName, role, schoolSize } = signupDto;
+    const { email, schoolName, role, schoolSize } = signupDto;
 
-    // Check if user already exists
     const existingUser = await this.userRepository.findOne({ where: { email } });
     if (existingUser) {
-      throw new BadRequestException('User with this email already exists');
+      throw new ConflictException('Email already registered');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate a random password
+    const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
     // Create User
     const newUser = this.userRepository.create({
@@ -551,7 +551,7 @@ export class AuthService {
     await this.mailService.sendSchoolSignUpNotification(recipient, {
       schoolName,
       email,
-      password, // Send raw password in email as requested "which is sent with the notification mail we get"
+      password: generatedPassword, // Send raw generated password in email
       role,
       schoolSize,
     });
