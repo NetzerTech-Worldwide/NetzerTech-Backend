@@ -15,37 +15,29 @@ async function bootstrap() {
 
   const allowedOrigins = corsOriginsEnv && corsOriginsEnv !== '*'
     ? corsOriginsEnv.split(',').map((origin) => origin.trim())
-    : process.env.NODE_ENV === 'production'
-      ? [] // In production, will allow all if CORS_ORIGINS not set
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4200'];
+    : [
+        'http://localhost:3000', 
+        'http://localhost:3001', 
+        'http://localhost:5173', 
+        'http://localhost:4200',
+        'https://admin.netzertech.co',
+        'https://student.netzertech.co'
+      ];
 
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) {
+      if (!origin || allowAllOrigins || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // If CORS_ORIGINS is set to "*" or not set, allow all origins
-      if (allowAllOrigins) {
-        if (process.env.NODE_ENV === 'production') {
-          const logger = new Logger('CORS');
-          logger.warn(`CORS allowing all origins (CORS_ORIGINS=${corsOriginsEnv || 'not set'}). This is not recommended for production.`);
-        }
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        const logger = new Logger('CORS');
-        logger.error(`CORS blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
-        callback(new Error('Not allowed by CORS'));
-      }
+      const logger = new Logger('CORS');
+      logger.error(`CORS blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
+      callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin'],
   });
 
   // Global validation pipe
