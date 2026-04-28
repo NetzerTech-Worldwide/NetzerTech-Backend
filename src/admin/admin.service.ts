@@ -231,21 +231,13 @@ export class AdminService {
             });
             studentUser = await queryRunner.manager.save(User, studentUser);
 
-            // 3. Find or Create Class (Scoped by School)
-            let studentClass = await queryRunner.manager.findOne(Class, { 
+            // 3. Find Class (Scoped by School)
+            const studentClass = await queryRunner.manager.findOne(Class, { 
                 where: { title: dto.class, school: schoolName } 
             });
 
             if (!studentClass) {
-                // Auto-create class if it doesn't exist for this school
-                studentClass = this.classRepository.create({
-                    title: dto.class,
-                    subject: 'General', // Default subject
-                    startTime: new Date(),
-                    endTime: new Date(),
-                    school: schoolName
-                });
-                studentClass = await queryRunner.manager.save(Class, studentClass);
+                throw new BadRequestException(`Class "${dto.class}" not found for this school. Please create the class first.`);
             }
 
             // Generate unique student ID (Scoped by School)
