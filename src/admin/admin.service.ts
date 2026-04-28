@@ -146,17 +146,15 @@ export class AdminService {
             let parent: Parent;
 
             if (parentUser) {
-                // If user exists but is not a parent (e.g. they are a teacher), this might be a problem in a real app,
-                // but for now we assume a user with this email should be a parent.
                 if (parentUser.parent) {
                     parent = parentUser.parent;
                 } else {
                     // Create parent profile for existing user
                     parent = this.parentRepository.create({
-                        fullName: parentUser.fullName,
+                        fullName: `${dto.parentTitle} ${dto.parentFirstName} ${dto.parentLastName}`,
                         phoneNumber: dto.parentPhone,
                         occupation: dto.parentOccupation,
-                        residentialAddress: dto.parentAddress,
+                        address: dto.parentAddress,
                         user: parentUser
                     });
                     parent = await queryRunner.manager.save(Parent, parent);
@@ -166,16 +164,15 @@ export class AdminService {
                 parentUser = this.userRepository.create({
                     email: dto.parentEmail,
                     password: 'defaultPassword123!', // Should be hashed in a real app
-                    userType: UserRole.PARENT,
-                    fullName: `${dto.parentFirstName} ${dto.parentLastName}`
+                    userType: UserRole.PARENT
                 });
                 parentUser = await queryRunner.manager.save(User, parentUser);
 
                 parent = this.parentRepository.create({
-                    fullName: parentUser.fullName,
+                    fullName: `${dto.parentTitle} ${dto.parentFirstName} ${dto.parentLastName}`,
                     phoneNumber: dto.parentPhone,
                     occupation: dto.parentOccupation,
-                    residentialAddress: dto.parentAddress,
+                    address: dto.parentAddress,
                     user: parentUser
                 });
                 parent = await queryRunner.manager.save(Parent, parent);
@@ -193,8 +190,7 @@ export class AdminService {
             let studentUser = this.userRepository.create({
                 email: studentEmail,
                 password: 'defaultPassword123!',
-                userType: UserRole.SECONDARY_STUDENT,
-                fullName: `${dto.studentFirstName} ${dto.studentLastName}`
+                userType: UserRole.SECONDARY_STUDENT
             });
             studentUser = await queryRunner.manager.save(User, studentUser);
 
@@ -246,7 +242,7 @@ export class AdminService {
 
             const student = this.studentRepository.create({
                 studentId: studentId!,
-                fullName: studentUser.fullName,
+                fullName: `${dto.studentFirstName} ${dto.studentLastName}`,
                 gender: dto.gender,
                 dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
                 parent: parent,
