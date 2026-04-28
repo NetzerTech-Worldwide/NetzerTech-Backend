@@ -132,6 +132,36 @@ export class AdminService {
         });
     }
 
+    async createClass(dto: CreateClassDto, adminId: string): Promise<Class> {
+        const schoolName = await this.getAdminSchoolName(adminId);
+        
+        const existingClass = await this.classRepository.findOne({
+            where: { title: dto.name, school: schoolName }
+        });
+
+        if (existingClass) {
+            throw new BadRequestException(`Class with name "${dto.name}" already exists for this school.`);
+        }
+
+        let teacher = null;
+        if (dto.classTeacherId) {
+            teacher = await this.teacherRepository.findOne({ where: { id: dto.classTeacherId } });
+        }
+
+        const newClass = this.classRepository.create({
+            title: dto.name,
+            gradeLevel: dto.level,
+            location: dto.room,
+            school: schoolName,
+            teacher: teacher,
+            subject: 'General', // Default subject
+            startTime: new Date(),
+            endTime: new Date(),
+        });
+
+        return this.classRepository.save(newClass);
+    }
+
     async getParents(adminId?: string): Promise<AdminParentDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
         const parents = await this.parentRepository.find({

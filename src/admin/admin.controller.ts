@@ -59,6 +59,15 @@ export class AdminController {
       return this.adminService.getClassesOverview(req.user.id);
   }
 
+  @Post('classes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new class' })
+  async createClass(@Request() req, @Body() dto: CreateClassDto) {
+      return this.adminService.createClass(dto, req.user.id);
+  }
+
   @Get('students')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER)

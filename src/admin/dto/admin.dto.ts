@@ -185,6 +185,33 @@ export class CreateStudentWithParentDto {
     relationship: string;
 }
 
+export class CreateClassDto {
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    name: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    level: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    section: string;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    classTeacherId?: string;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    room?: string;
+}
+
 export class AdminSystemUserDto {
     @ApiProperty()
     id: string;
