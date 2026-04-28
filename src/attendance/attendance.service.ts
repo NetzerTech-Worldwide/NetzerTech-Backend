@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { User, Student, Attendance, LeaveRequest, AttendanceStatus, Class } from '../entities';
-import { AttendanceOverviewDto, CreateLeaveRequestDto } from './dto/attendance.dto';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { AttendanceOverviewDto, CreateLeaveRequestDto, UpdateLeaveRequestDto, AdminClassAttendanceDto, AdminStudentAttendanceDto } from './dto/attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -11,6 +13,7 @@ export class AttendanceService {
         @InjectRepository(Attendance) private attendanceRepository: Repository<Attendance>,
         @InjectRepository(LeaveRequest) private leaveRequestRepository: Repository<LeaveRequest>,
         @InjectRepository(Class) private classRepository: Repository<Class>,
+        @InjectDataSource() private dataSource: DataSource,
     ) { }
 
     private async getStudent(userId: string): Promise<Student> {
@@ -269,5 +272,132 @@ export class AttendanceService {
             message: 'Leave request submitted successfully',
             leaveRequest: saved
         };
+    }
+
+    async getAdminClasses(): Promise<AdminClassAttendanceDto[]> {
+        const classes = await this.classRepository.find({ relations: ['teacher'] });
+        const results: AdminClassAttendanceDto[] = [];
+
+        for (const cls of classes) {
+            const studentsCount = await this.dataSource.getRepository(Student).count({
+                where: { classes: { id: cls.id } }
+            });
+
+            const attendanceRecords = await this.attendanceRepository.find({
+                where: { class: { id: cls.id } }
+            });
+
+            const total = attendanceRecords.length;
+            const present = attendanceRecords.filter(a => a.status === AttendanceStatus.PRESENT).length;
+            const absent = attendanceRecords.filter(a => a.status === AttendanceStatus.ABSENT).length;
+            const late = attendanceRecords.filter(a => a.status === AttendanceStatus.LATE).length;
+            const excused = attendanceRecords.filter(a => a.status === AttendanceStatus.EXCUSED).length;
+
+            results.push({
+                class: cls.title,
+                students: studentsCount,
+                avgAttendance: total > 0 ? Math.round((present / total) * 100) : 100,
+                totalPresent: present,
+                totalAbsent: absent,
+                totalLate: late,
+                totalExcused: excused,
+                classTeacher: cls.teacher?.fullName || 'Unassigned'
+            });
+        }
+
+        return results;
+    }
+
+    async getAdminStudents(className?: string): Promise<AdminStudentAttendanceDto[]> {
+        const studentsQuery = this.dataSource.getRepository(Student).createQueryBuilder('student')
+            .leftJoinAndSelect('student.user', 'user')
+            .leftJoinAndSelect('student.classes', 'class');
+
+        if (className) {
+            studentsQuery.andWhere('class.title = :className', { className });
+        }
+
+        const students = await studentsQuery.getMany();
+        const results: AdminStudentAttendanceDto[] = [];
+
+        for (const student of students) {
+            const attendanceRecords = await this.attendanceRepository.find({
+                where: { student: { id: student.id } }
+            });
+
+            const total = attendanceRecords.length;
+            const present = attendanceRecords.filter(a => a.status === AttendanceStatus.PRESENT).length;
+            const absent = attendanceRecords.filter(a => a.status === AttendanceStatus.ABSENT).length;
+            const late = attendanceRecords.filter(a => a.status === AttendanceStatus.LATE).length;
+            const excused = attendanceRecords.filter(a => a.status === AttendanceStatus.EXCUSED).length;
+
+            results.push({
+                id: student.studentId || student.id,
+                name: student.user.fullName,
+                class: student.classes.length > 0 ? student.classes[0].title : 'N/A',
+                totalDays: total,
+                present,
+                absent,
+                late,
+                excused,
+                attendanceRate: total > 0 ? Math.round((present / total) * 100) : 100
+            });
+        }
+
+        return results;
+    }
+
+    async getAdminAllLeaveRequests(status?: string) {
+        const query = this.leaveRequestRepository.createQueryBuilder('lr')
+            .leftJoinAndSelect('lr.student', 'student')
+            .leftJoinAndSelect('student.user', 'studentUser')
+            .leftJoinAndSelect('lr.reviewedBy', 'admin');
+
+        if (status && status !== 'All') {
+            query.andWhere('lr.status = :status', { status: status.toLowerCase() });
+        }
+
+        query.orderBy('lr.createdAt', 'DESC');
+
+        const requests = await query.getMany();
+
+        return requests.map(r => ({
+            id: r.id,
+            type: 'leave_request',
+            category: 'Leave Requests',
+            title: `Leave Request: ${r.student.user.fullName}`,
+            description: r.reason,
+            submittedBy: r.student.user.fullName,
+            submittedDate: r.createdAt.toISOString().split('T')[0],
+            session: '2025/2026', // Placeholder
+            term: 'Second Term', // Placeholder
+            priority: 'Medium', // Placeholder
+            status: r.status.charAt(0).toUpperCase() + r.status.slice(1),
+            details: {
+                'Leave Type': r.leaveType,
+                'Start Date': r.fromDate instanceof Date ? r.fromDate.toISOString().split('T')[0] : r.fromDate,
+                'End Date': r.toDate instanceof Date ? r.toDate.toISOString().split('T')[0] : r.toDate,
+                'Reason': r.reason
+            },
+            attachments: r.supportingDocumentUrl ? [r.supportingDocumentUrl] : []
+        }));
+    }
+
+    async updateLeaveRequestStatus(id: string, dto: UpdateLeaveRequestDto, adminUserId: string) {
+        const request = await this.leaveRequestRepository.findOne({
+            where: { id },
+            relations: ['student', 'student.user']
+        });
+
+        if (!request) throw new NotFoundException('Leave request not found');
+
+        const admin = await this.userRepository.findOne({ where: { id: adminUserId } });
+
+        request.status = dto.status.toLowerCase();
+        request.reviewerComments = dto.adminComments;
+        request.reviewedBy = admin;
+        request.reviewedAt = new Date();
+
+        return this.leaveRequestRepository.save(request);
     }
 }

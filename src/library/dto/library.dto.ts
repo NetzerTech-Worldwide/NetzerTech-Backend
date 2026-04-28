@@ -1,5 +1,47 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, Min, Max } from 'class-validator';
+import { IsNumber, IsNotEmpty, IsOptional, Min, Max, IsString } from 'class-validator';
+
+export class CreateBookDto {
+    @ApiProperty({ description: 'Title of the book', example: 'Clean Code' })
+    @IsString()
+    @IsNotEmpty()
+    title: string;
+
+    @ApiProperty({ description: 'Author of the book', example: 'Robert C. Martin' })
+    @IsString()
+    @IsNotEmpty()
+    author: string;
+
+    @ApiProperty({ description: 'ISBN number', example: '9780132350884' })
+    @IsString()
+    @IsNotEmpty()
+    isbn: string;
+
+    @ApiProperty({ description: 'Category', example: 'Technology' })
+    @IsString()
+    @IsNotEmpty()
+    category: string;
+
+    @ApiProperty({ description: 'Number of copies available', example: 5 })
+    @IsNumber()
+    @Min(1)
+    copies: number;
+
+    @ApiPropertyOptional({ description: 'Location on the shelf', example: 'A1-Tech' })
+    @IsString()
+    @IsOptional()
+    shelfLocation?: string;
+
+    @ApiPropertyOptional({ description: 'Publisher', example: 'Prentice Hall' })
+    @IsString()
+    @IsOptional()
+    publisher?: string;
+
+    @ApiPropertyOptional({ description: 'Year published', example: '2008' })
+    @IsString()
+    @IsOptional()
+    yearPublished?: string;
+}
 
 export class SetReadingGoalDto {
     @ApiProperty({ description: 'The target number of books to read in the year', example: 20 })

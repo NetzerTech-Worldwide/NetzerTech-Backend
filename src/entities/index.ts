@@ -37,3 +37,7 @@ export * from './student-club.entity';
 export * from './club-event.entity';
 export * from './student-club-event.entity';
 export * from './club-announcement.entity';
+export * from './bill.entity';
+export * from './bill-item.entity';
+export * from './student-bill.entity';
+export * from './payment.entity';

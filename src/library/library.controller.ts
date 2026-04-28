@@ -6,13 +6,13 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { SetReadingGoalDto, SetReminderDto, LibraryStatsDto, RateBookDto } from './dto/library.dto';
+import { SetReadingGoalDto, SetReminderDto, LibraryStatsDto, RateBookDto, CreateBookDto } from './dto/library.dto';
 
 @ApiTags('Library')
 @Controller('library')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
-@Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT)
+@Roles(UserRole.SECONDARY_STUDENT, UserRole.UNIVERSITY_STUDENT, UserRole.ADMIN, UserRole.TEACHER)
 export class LibraryController {
     constructor(private readonly libraryService: LibraryService) {}
 
@@ -34,6 +34,13 @@ export class LibraryController {
         @Query('status') status?: string,
     ) {
         return this.libraryService.getCatalog(search, category, status);
+    }
+
+    @Post('catalog')
+    @ApiOperation({ summary: 'Add a new book to the library catalog (Admin/Teacher only)' })
+    @Roles(UserRole.ADMIN, UserRole.TEACHER)
+    async addBook(@Body() dto: CreateBookDto) {
+        return this.libraryService.addBook(dto);
     }
 
     // --- Loans ---

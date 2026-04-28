@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SupportTicket, TicketStatus } from '../entities/support-ticket.entity';
 import { Faq } from '../entities/faq.entity';
-import { CreateSupportTicketDto, HelpCategoryDto } from './dto/support.dto';
+import { CreateSupportTicketDto, HelpCategoryDto, CreateFaqDto } from './dto/support.dto';
 
 @Injectable()
 export class SupportService {
@@ -42,6 +42,17 @@ export class SupportService {
         }
 
         return query.orderBy('faq.sortOrder', 'ASC').getMany();
+    }
+
+    async createFaq(dto: CreateFaqDto): Promise<Faq> {
+        const faq = this.faqRepository.create({
+            question: dto.question,
+            answer: dto.answer,
+            category: dto.category || 'General',
+            isActive: true,
+            sortOrder: 0
+        });
+        return this.faqRepository.save(faq);
     }
 
     // --- Tickets ---

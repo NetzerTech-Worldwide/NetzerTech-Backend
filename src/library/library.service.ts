@@ -9,7 +9,7 @@ import {
     ReadingGoal,
     LoanStatus
 } from '../entities/library.entity';
-import { SetReadingGoalDto, LibraryStatsDto } from './dto/library.dto';
+import { SetReadingGoalDto, LibraryStatsDto, CreateBookDto } from './dto/library.dto';
 
 @Injectable()
 export class LibraryService {
@@ -94,6 +94,24 @@ export class LibraryService {
         }
 
         return query.orderBy('book.title', 'ASC').getMany();
+    }
+
+    async addBook(dto: CreateBookDto): Promise<Book> {
+        const book = this.bookRepository.create({
+            title: dto.title,
+            author: dto.author,
+            isbn: dto.isbn,
+            category: dto.category,
+            totalCopies: dto.copies,
+            availableCopies: dto.copies,
+            shelfLocation: dto.shelfLocation,
+            publisher: dto.publisher,
+            yearPublished: dto.yearPublished,
+            isActive: true,
+            rating: 0
+        });
+
+        return this.bookRepository.save(book);
     }
 
     // --- Borrowing Operations ---

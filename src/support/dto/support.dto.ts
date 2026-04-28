@@ -45,6 +45,23 @@ export class SupportTicketResponseDto {
 }
 
 // --- FAQ Response ---
+export class CreateFaqDto {
+    @ApiProperty({ description: 'The question', example: 'How do I reset my password?' })
+    @IsString()
+    @IsNotEmpty()
+    question: string;
+
+    @ApiProperty({ description: 'The answer', example: 'To reset your password, click on your profile icon...' })
+    @IsString()
+    @IsNotEmpty()
+    answer: string;
+
+    @ApiPropertyOptional({ description: 'Category', example: 'Account' })
+    @IsString()
+    @IsOptional()
+    category?: string;
+}
+
 export class FaqResponseDto {
     @ApiProperty() id: string;
     @ApiProperty({ example: 'How do I reset my password?' }) question: string;

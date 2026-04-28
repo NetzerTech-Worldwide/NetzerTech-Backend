@@ -86,3 +86,66 @@ export class LeaveRequestDetailDto {
     @ApiPropertyOptional()
     supportingDocumentUrl?: string;
 }
+
+export class UpdateLeaveRequestDto {
+    @ApiProperty({ enum: ['pending', 'approved', 'rejected'] })
+    status: string;
+
+    @ApiPropertyOptional()
+    adminComments?: string;
+}
+
+export class AdminClassAttendanceDto {
+    @ApiProperty()
+    class: string;
+
+    @ApiProperty()
+    students: number;
+
+    @ApiProperty()
+    avgAttendance: number;
+
+    @ApiProperty()
+    totalPresent: number;
+
+    @ApiProperty()
+    totalAbsent: number;
+
+    @ApiProperty()
+    totalLate: number;
+
+    @ApiProperty()
+    totalExcused: number;
+
+    @ApiProperty()
+    classTeacher: string;
+}
+
+export class AdminStudentAttendanceDto {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty()
+    name: string;
+
+    @ApiProperty()
+    class: string;
+
+    @ApiProperty()
+    totalDays: number;
+
+    @ApiProperty()
+    present: number;
+
+    @ApiProperty()
+    absent: number;
+
+    @ApiProperty()
+    late: number;
+
+    @ApiProperty()
+    excused: number;
+
+    @ApiProperty()
+    attendanceRate: number;
+}

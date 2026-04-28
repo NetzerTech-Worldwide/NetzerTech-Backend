@@ -5,7 +5,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import { AttendanceService } from './attendance.service';
-import { CreateLeaveRequestDto, LeaveRequestStatsDto, LeaveRequestDetailDto } from './dto/attendance.dto';
+import { CreateLeaveRequestDto, LeaveRequestStatsDto, LeaveRequestDetailDto, UpdateLeaveRequestDto, AdminClassAttendanceDto, AdminStudentAttendanceDto } from './dto/attendance.dto';
 
 @ApiTags('attendance')
 @Controller('attendance')
@@ -104,5 +104,44 @@ export class AttendanceController {
     @ApiOperation({ summary: 'Submit a new leave request' })
     async createLeaveRequest(@Request() req, @Body() body: CreateLeaveRequestDto) {
         return this.attendanceService.createLeaveRequest(req.user.id, body);
+    }
+
+    // --- Admin Endpoints ---
+
+    @Get('admin/classes')
+    @Roles(UserRole.ADMIN, UserRole.TEACHER)
+    @ApiOperation({ summary: 'Get class-wise attendance overview for admins' })
+    @ApiResponse({ status: 200, type: [AdminClassAttendanceDto] })
+    async getAdminClasses() {
+        return this.attendanceService.getAdminClasses();
+    }
+
+    @Get('admin/students')
+    @Roles(UserRole.ADMIN, UserRole.TEACHER)
+    @ApiOperation({ summary: 'Get student attendance records for admins' })
+    @ApiQuery({ name: 'class', required: false, type: String })
+    @ApiResponse({ status: 200, type: [AdminStudentAttendanceDto] })
+    async getAdminStudents(@Query('class') className?: string) {
+        return this.attendanceService.getAdminStudents(className);
+    }
+
+    @Get('admin/leave-requests')
+    @Roles(UserRole.ADMIN, UserRole.TEACHER)
+    @ApiOperation({ summary: 'Get all leave requests for admins' })
+    @ApiQuery({ name: 'status', required: false, type: String })
+    @ApiResponse({ status: 200, type: [LeaveRequestDetailDto] })
+    async getAdminLeaveRequests(@Query('status') status?: string) {
+        return this.attendanceService.getAdminAllLeaveRequests(status);
+    }
+
+    @Post('admin/leave-requests/:id/status')
+    @Roles(UserRole.ADMIN, UserRole.TEACHER)
+    @ApiOperation({ summary: 'Approve or reject a leave request' })
+    async updateLeaveRequestStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateLeaveRequestDto,
+        @Request() req
+    ) {
+        return this.attendanceService.updateLeaveRequestStatus(id, dto, req.user.id);
     }
 }

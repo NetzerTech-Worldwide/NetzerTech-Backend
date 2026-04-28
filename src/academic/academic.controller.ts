@@ -6,7 +6,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { AvailableSubjectsDto } from './dto/subject.dto';
+import { AvailableSubjectsDto, CreateSubjectDto } from './dto/subject.dto';
 import { StudentCoursesDto } from './dto/student-course.dto';
 import { RegisterSubjectDto, RegisterSubjectResponseDto } from './dto/register-subject.dto';
 import { StudentSubjectsProgressDto } from './dto/student-subject-progress.dto';
@@ -41,6 +41,16 @@ export class AcademicController {
       ? req.user.id
       : undefined;
     return this.academicService.getAvailableSubjects(userId);
+  }
+
+  @Post('subjects')
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  @ApiOperation({
+    summary: 'Add a new subject to the curriculum',
+    description: 'For admins to add new subjects'
+  })
+  async createSubject(@Body() dto: CreateSubjectDto) {
+    return this.academicService.createSubject(dto);
   }
 
   @Get('courses')

@@ -24,6 +24,7 @@ import { StudentClassRegistration } from './student-class-registration.entity';
 import { StudentClassActivity } from './student-class-activity.entity';
 import { Assignment } from './assignment.entity';
 import { StudentAssignment } from './student-assignment.entity';
+import { StudentBill } from './student-bill.entity';
 
 @Entity('students')
 export class Student {
@@ -131,4 +132,7 @@ export class Student {
 
   @OneToMany(() => StudentAssignment, (sa) => sa.student)
   studentAssignments: StudentAssignment[];
+
+  @OneToMany(() => StudentBill, (studentBill) => studentBill.student)
+  studentBills: StudentBill[];
 }

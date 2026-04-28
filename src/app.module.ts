@@ -19,6 +19,7 @@ import { AdminModule } from './admin/admin.module';
 import { SupportModule } from './support/support.module';
 import { LibraryModule } from './library/library.module';
 import { StudentLifeModule } from './student-life/student-life.module';
+import { FinanceModule } from './finance/finance.module';
 import {
   User,
   Student,
@@ -50,6 +51,10 @@ import {
   AcademicProgress,
   Reminder,
   ActivityLog,
+  Bill,
+  BillItem,
+  StudentBill,
+  Payment,
 } from './entities';
 import { SupportTicket } from './entities/support-ticket.entity';
 import { Faq } from './entities/faq.entity';
@@ -139,6 +144,10 @@ import {
             ClubEvent,
             StudentClubEvent,
             ClubAnnouncement,
+            Bill,
+            BillItem,
+            StudentBill,
+            Payment,
           ],
           synchronize: configService.get('NODE_ENV') === 'development',
           logging: configService.get('NODE_ENV') === 'development',
@@ -208,6 +217,7 @@ import {
     SupportModule,
     LibraryModule,
     StudentLifeModule,
+    FinanceModule,
   ],
   controllers: [AppController],
   providers: [

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger, BadRequestException, ForbiddenEx
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, Student, Class, AcademicProgress, StudentClassRegistration } from '../entities';
-import { AvailableSubjectsDto, SubjectDto } from './dto/subject.dto';
+import { AvailableSubjectsDto, SubjectDto, CreateSubjectDto } from './dto/subject.dto';
 import { StudentCoursesDto } from './dto/student-course.dto';
 import { RegisterSubjectDto, RegisterSubjectResponseDto, RegistrationResultDto } from './dto/register-subject.dto';
 import { StudentSubjectsProgressDto, StudentSubjectProgressDto } from './dto/student-subject-progress.dto';
@@ -107,6 +107,20 @@ export class AcademicService {
       .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
 
     return { subjects };
+  }
+
+  async createSubject(dto: CreateSubjectDto): Promise<any> {
+    const newClass = this.classRepository.create({
+      title: dto.name,
+      subject: dto.code,
+      description: dto.duration,
+      startTime: new Date(),
+      endTime: new Date(new Date().setMonth(new Date().getMonth() + 6)), // Default 6 months
+      isActive: true,
+      teacher: dto.teacherId ? { id: dto.teacherId } as any : null
+    });
+
+    return this.classRepository.save(newClass);
   }
 
   async getStudentCourses(userId: string): Promise<StudentCoursesDto> {

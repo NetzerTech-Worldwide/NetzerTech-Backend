@@ -1,4 +1,4 @@
-export { SubjectDto, AvailableSubjectsDto } from './subject.dto';
+export { SubjectDto, AvailableSubjectsDto, CreateSubjectDto } from './subject.dto';
 export { StudentSubjectDto, StudentCoursesDto } from './student-course.dto';
 export {
   RegisterSubjectDto,

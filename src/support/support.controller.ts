@@ -8,6 +8,7 @@ import {
     SupportTicketResponseDto,
     FaqResponseDto,
     HelpCategoryDto,
+    CreateFaqDto,
 } from './dto/support.dto';
 
 @ApiTags('Support')
@@ -36,6 +37,13 @@ export class SupportController {
         @Query('category') category?: string,
     ) {
         return this.supportService.getFaqs(search, category);
+    }
+
+    @Post('faqs')
+    @ApiOperation({ summary: 'Add a new FAQ (Admin only)' })
+    @ApiResponse({ status: 201, description: 'FAQ created successfully', type: FaqResponseDto })
+    async createFaq(@Body() dto: CreateFaqDto) {
+        return this.supportService.createFaq(dto);
     }
 
     // --- Submit Ticket ---
