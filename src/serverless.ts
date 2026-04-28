@@ -16,20 +16,29 @@ async function bootstrap() {
         const allowAllOrigins = corsOriginsEnv === '*' || !corsOriginsEnv;
         const allowedOrigins = corsOriginsEnv && corsOriginsEnv !== '*'
             ? corsOriginsEnv.split(',').map((origin) => origin.trim())
-            : process.env.NODE_ENV === 'production'
-                ? []
-                : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4200'];
+            : [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://localhost:5173',
+                'http://localhost:4200',
+                'https://admin.netzertech.co',
+                'https://student.netzertech.co'
+            ];
 
         app.enableCors({
             origin: (origin, callback) => {
-                if (!origin) return callback(null, true);
-                if (allowAllOrigins) return callback(null, true);
-                if (allowedOrigins.includes(origin)) return callback(null, true);
+                // Allow requests with no origin (like mobile apps or curl requests)
+                if (!origin || allowAllOrigins || allowedOrigins.includes(origin)) {
+                    return callback(null, true);
+                }
+
+                const logger = new Logger('CORS');
+                logger.error(`CORS blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
                 callback(new Error('Not allowed by CORS'));
             },
             credentials: true,
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization'],
+            allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin'],
         });
 
         app.useGlobalPipes(
