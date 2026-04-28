@@ -69,4 +69,33 @@ export class MailService {
 
     return this.sendMail(to, subject, html);
   }
+
+  async sendSchoolSignUpNotification(to: string, details: any) {
+    const { schoolName, email, password, role, schoolSize } = details;
+    const subject = `New School Sign-Up: ${schoolName}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+        <h2 style="color: #216388; text-align: center;">New School Registration</h2>
+        <p>A new school has signed up on the NetzerTech platform.</p>
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #333;">School Details</h3>
+          <p><strong>School Name:</strong> ${schoolName}</p>
+          <p><strong>School Size:</strong> ${schoolSize}</p>
+          <p><strong>Admin Email:</strong> ${email}</p>
+          <p><strong>Admin Role:</strong> ${role}</p>
+        </div>
+        <div style="background-color: #fff4e5; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ffe5cc;">
+          <h3 style="margin-top: 0; color: #856404;">Generated Credentials</h3>
+          <p><strong>Login Email:</strong> ${email}</p>
+          <p><strong>Password:</strong> ${password}</p>
+        </div>
+        <p>Please reach out to the administrator to complete their onboarding.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="font-size: 12px; color: #888; text-align: center;">&copy; ${new Date().getFullYear()} NetzerTech. Internal Notification.</p>
+      </div>
+    `;
+
+    return this.sendMail(to, subject, html);
+  }
 }

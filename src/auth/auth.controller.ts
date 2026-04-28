@@ -24,12 +24,23 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   AuthResponseDto,
+  SchoolSignupDto,
 } from './dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
+
+  @Post('school-signup')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'School administrator sign-up' })
+  @ApiResponse({ status: 201, description: 'School registered successfully' })
+  @ApiResponse({ status: 400, description: 'User already exists' })
+  async schoolSignup(@Body() signupDto: SchoolSignupDto) {
+    return this.authService.registerSchool(signupDto);
+  }
 
   @Post('login/student/secondary')
   @UseGuards(ThrottlerGuard)

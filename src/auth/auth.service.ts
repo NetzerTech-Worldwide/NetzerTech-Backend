@@ -23,6 +23,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   ChangePasswordDto,
+  SchoolSignupDto,
 } from './dto';
 
 @Injectable()
@@ -504,5 +505,55 @@ export class AuthService {
 
   private generateResetToken(): string {
     return crypto.randomBytes(32).toString('hex');
+  }
+
+  async registerSchool(signupDto: SchoolSignupDto) {
+    const { email, password, schoolName, role, schoolSize } = signupDto;
+
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+    if (existingUser) {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create User
+    const newUser = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      userType: UserRole.ADMIN,
+      isActive: true,
+      mustChangePassword: false, // It's their own password
+    });
+
+    const savedUser = await this.userRepository.save(newUser);
+
+    // Create Admin Profile
+    // Temporary mapping: We'll put schoolName and schoolSize inside department/address since there's no dedicated column yet.
+    // Or we could leave them null, but we need to track them. Let's put role in department, schoolName in address.
+    const newAdmin = this.adminRepository.create({
+      fullName: 'School Admin',
+      department: role,
+      address: `${schoolName} (Size: ${schoolSize})`,
+      isSuperAdmin: true,
+      user: savedUser,
+    });
+
+    await this.adminRepository.save(newAdmin);
+
+    // Send email to NetzerTech owners
+    // The recipient should ideally be an environment variable, but we'll use a default for now.
+    const recipient = this.configService.get<string>('ADMIN_NOTIFICATION_EMAIL', 'founders@netzertech.com');
+    await this.mailService.sendSchoolSignUpNotification(recipient, {
+      schoolName,
+      email,
+      password, // Send raw password in email as requested "which is sent with the notification mail we get"
+      role,
+      schoolSize,
+    });
+
+    return { message: 'School registered successfully' };
   }
 }

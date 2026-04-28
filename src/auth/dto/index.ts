@@ -8,3 +8,4 @@ export { ChangePasswordDto } from './change-password.dto';
 export { AuthResponseDto } from './auth-response.dto';
 export { UniversityStudentLoginDto } from './university-student-login.dto';
 export * from './user-profile-response.dto';
+export { SchoolSignupDto } from './school-signup.dto';
