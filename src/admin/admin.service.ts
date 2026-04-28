@@ -24,12 +24,27 @@ export class AdminService {
         private dataSource: DataSource
     ) {}
 
-    async getClassesOverview(): Promise<AdminClassOverviewDto[]> {
+    private async getAdminSchoolName(adminId: string): Promise<string> {
+        const admin = await this.adminRepository.findOne({ 
+            where: { user: { id: adminId } } 
+        });
+        
+        if (admin && admin.address) {
+            // Extract school name: "NetzerTech High School (Size: 100-500)" -> "NetzerTech High School"
+            return admin.address.split(' (Size:')[0];
+        }
+        
+        return 'NetzerTech School'; // Default fallback
+    }
+
+    async getClassesOverview(adminId?: string): Promise<AdminClassOverviewDto[]> {
+        const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
         const classes = await this.classRepository.find({ relations: ['teacher', 'students', 'students.user'] });
         const results: AdminClassOverviewDto[] = [];
 
         for (const cls of classes) {
-            const students = cls.students || [];
+            // Filter students by school if schoolName is provided
+            const students = cls.students ? cls.students.filter(s => !schoolName || s.school === schoolName) : [];
             
             let males = 0;
             let females = 0;
@@ -58,8 +73,10 @@ export class AdminService {
         return results;
     }
 
-    async getStudents(): Promise<AdminStudentDto[]> {
+    async getStudents(adminId?: string): Promise<AdminStudentDto[]> {
+        const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
         const students = await this.studentRepository.find({
+            where: schoolName ? { school: schoolName } : {},
             relations: ['user', 'parent', 'parent.user', 'classes']
         });
 

@@ -55,8 +55,8 @@ export class AdminController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get classes overview with student counts' })
   @ApiResponse({ status: 200, type: [AdminClassOverviewDto] })
-  async getClassesOverview() {
-      return this.adminService.getClassesOverview();
+  async getClassesOverview(@Request() req) {
+      return this.adminService.getClassesOverview(req.user.id);
   }
 
   @Get('students')
@@ -65,8 +65,8 @@ export class AdminController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all students detailed list' })
   @ApiResponse({ status: 200, type: [AdminStudentDto] })
-  async getStudents() {
-      return this.adminService.getStudents();
+  async getStudents(@Request() req) {
+      return this.adminService.getStudents(req.user.id);
   }
 
   @Post('students')
