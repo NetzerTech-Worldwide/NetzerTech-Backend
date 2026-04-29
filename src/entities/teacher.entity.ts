@@ -33,7 +33,7 @@ export class Teacher {
   @Column({ nullable: true })
   address: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, select: false })
   school: string;
 
   @CreateDateColumn()

@@ -40,10 +40,19 @@ export class AdminService {
 
     async getClassesOverview(adminId?: string): Promise<AdminClassOverviewDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
-        const classes = await this.classRepository.find({ 
-            where: schoolName ? { school: schoolName } : {},
-            relations: ['teacher', 'students', 'students.user'] 
-        });
+        let classes: Class[] = [];
+        try {
+            classes = await this.classRepository.find({ 
+                where: schoolName ? { school: schoolName } : {},
+                relations: ['teacher', 'students', 'students.user'] 
+            });
+        } catch (err) {
+            console.error('[AdminService] getClassesOverview failed with teacher relation:', err.message);
+            classes = await this.classRepository.find({ 
+                where: schoolName ? { school: schoolName } : {},
+                relations: ['students', 'students.user'] 
+            });
+        }
         const results: AdminClassOverviewDto[] = [];
 
         for (const cls of classes) {
