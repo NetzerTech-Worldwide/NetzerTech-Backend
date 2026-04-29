@@ -20,29 +20,45 @@ export class UsersService {
   ) {}
 
   async findAll(): Promise<User[]> {
-    return this.userRepository.find({
-      relations: ['student', 'parent', 'teacher', 'admin'],
-    });
+    try {
+      return await this.userRepository.find({
+        relations: ['student', 'parent', 'teacher', 'admin'],
+      });
+    } catch (err) {
+      console.error('[UsersService] findAll failed with relations:', err.message);
+      return this.userRepository.find();
+    }
   }
-
+  
   async findOne(id: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      relations: ['student', 'parent', 'teacher', 'admin'],
-    });
-
+    let user: User | null = null;
+    try {
+      user = await this.userRepository.findOne({
+        where: { id },
+        relations: ['student', 'parent', 'teacher', 'admin'],
+      });
+    } catch (err) {
+      console.error('[UsersService] findOne failed with relations:', err.message);
+      user = await this.userRepository.findOne({ where: { id } });
+    }
+  
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
+  
     return user;
   }
-
+  
   async findByRole(userType: UserRole): Promise<User[]> {
-    return this.userRepository.find({
-      where: { userType },
-      relations: ['student', 'parent', 'teacher', 'admin'],
-    });
+    try {
+      return await this.userRepository.find({
+        where: { userType },
+        relations: ['student', 'parent', 'teacher', 'admin'],
+      });
+    } catch (err) {
+      console.error('[UsersService] findByRole failed with relations:', err.message);
+      return this.userRepository.find({ where: { userType } });
+    }
   }
 
   async deactivateUser(id: string): Promise<User> {
