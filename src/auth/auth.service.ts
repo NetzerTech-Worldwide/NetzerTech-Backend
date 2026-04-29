@@ -228,10 +228,17 @@ export class AuthService {
     // Re-fetch user with all profile relations so getUserProfile doesn't crash
     // (the user object from validateStudent only has the reverse relation student→user,
     //  not the forward relation user→student/parent/teacher/admin)
-    const fullUser = await this.userRepository.findOne({
-      where: { id: user.id },
-      relations: ['student', 'parent', 'teacher', 'admin'],
-    }) ?? user; // Fallback to original user if re-fetch fails
+    let fullUser: User | null = null;
+    try {
+      fullUser = await this.userRepository.findOne({
+        where: { id: user.id },
+        relations: ['student', 'parent', 'teacher', 'admin'],
+      });
+    } catch (err) {
+      console.error('[AuthService] Failed to fetch user with relations, falling back to basic user:', err.message);
+      fullUser = await this.userRepository.findOne({ where: { id: user.id } });
+    }
+    fullUser = fullUser ?? user;
 
     // Always include mustChangePassword to track first-time users
     const response: any = {

@@ -34,6 +34,9 @@ export class DatabaseSeeder {
       await queryRunner.query(`ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "timeIn" varchar`);
       await queryRunner.query(`ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "timeOut" varchar`);
 
+      // -- Teacher table new columns --
+      await queryRunner.query(`ALTER TABLE "teachers" ADD COLUMN IF NOT EXISTS "school" varchar`);
+
       // -- Leave requests table --
       await queryRunner.query(`
         CREATE TABLE IF NOT EXISTS "leave_requests" (
