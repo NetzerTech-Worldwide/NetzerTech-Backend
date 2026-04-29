@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -228,4 +229,32 @@ import {
     },
   ],
 })
-export class AppModule { }
+export class AppModule implements OnModuleInit {
+  constructor(private dataSource: DataSource) {}
+
+  async onModuleInit() {
+    // Only run manual migrations in production where 'synchronize' is false
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      
+      try {
+        console.log('[AutoMigration] Checking for missing schema columns...');
+        
+        // 1. Add 'school' to 'teachers' table
+        await queryRunner.query(`ALTER TABLE "teachers" ADD COLUMN IF NOT EXISTS "school" varchar`);
+        
+        // 2. Ensure other common missing columns from seeder are present
+        await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "relationship" varchar`);
+        await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "email" varchar`);
+        await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "school" varchar`);
+        
+        console.log('[AutoMigration] Schema check completed successfully');
+      } catch (err) {
+        console.error('[AutoMigration] Failed to apply schema updates:', err.message);
+      } finally {
+        await queryRunner.release();
+      }
+    }
+  }
+}
