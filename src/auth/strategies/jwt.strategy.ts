@@ -48,10 +48,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('Invalid token payload');
       }
 
-      const user = await this.userRepository.findOne({
-        where: { id: sub },
-        relations: ['student', 'parent', 'teacher', 'admin'],
-      });
+      let user: User | null = null;
+      try {
+        user = await this.userRepository.findOne({
+          where: { id: sub },
+          relations: ['student', 'parent', 'teacher', 'admin'],
+        });
+      } catch (err) {
+        console.error('[JwtStrategy] Failed to fetch user with relations, falling back to basic user:', err.message);
+        user = await this.userRepository.findOne({ where: { id: sub } });
+      }
 
       if (!user) {
         throw new UnauthorizedException('User not found');
