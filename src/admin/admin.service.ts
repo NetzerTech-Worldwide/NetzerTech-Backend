@@ -351,13 +351,25 @@ export class AdminService {
 
     async getSystemUsers(adminId?: string): Promise<AdminSystemUserDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
-        const users = await this.userRepository.find({
-            where: [
-                { userType: UserRole.ADMIN, admin: schoolName ? { address: Like(`%${schoolName}%`) } : {} },
-                { userType: UserRole.TEACHER, teacher: schoolName ? { school: schoolName } : {} }
-            ],
-            relations: ['admin', 'teacher']
-        });
+        let users: User[] = [];
+        
+        try {
+            users = await this.userRepository.find({
+                where: [
+                    { userType: UserRole.ADMIN, admin: schoolName ? { address: Like(`%${schoolName}%`) } : {} },
+                    { userType: UserRole.TEACHER, teacher: schoolName ? { school: schoolName } : {} }
+                ],
+                relations: ['admin', 'teacher']
+            });
+        } catch (err) {
+            console.error('[AdminService] getSystemUsers failed with relations, falling back to basic list:', err.message);
+            users = await this.userRepository.find({
+                where: [
+                    { userType: UserRole.ADMIN },
+                    { userType: UserRole.TEACHER }
+                ]
+            });
+        }
 
         return users.map(user => {
             let role = 'Admin';
@@ -368,26 +380,17 @@ export class AdminService {
                 department = user.teacher?.department || 'Academic';
             } else if (user.admin) {
                 if (user.admin.isSuperAdmin) role = 'Super Admin';
-                else if (user.admin.department) {
-                    role = user.admin.department; // e.g., 'Principal', 'Bursar'
-                    department = user.admin.department;
-                }
+                department = user.admin.department || 'Administration';
             }
-
-            const permissions = [
-                { module: 'All Modules', canView: true, canEdit: user.userType === UserRole.ADMIN, canDelete: false }
-            ];
 
             return {
                 id: user.id,
-                name: user.admin?.fullName || user.teacher?.fullName || user.email,
                 email: user.email,
-                role: role,
-                department: department,
+                fullName: user.teacher?.fullName || user.admin?.fullName || 'System User',
+                role,
+                department,
                 status: user.isActive ? 'Active' : 'Inactive',
-                lastLogin: user.lastLoginAt ? new Date(user.lastLoginAt).toISOString().split('T')[0] : 'Never',
-                createdDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                permissions: permissions
+                lastLogin: user.lastLoginAt ? this.formatTimeAgo(user.lastLoginAt) : 'Never'
             };
         });
     }
@@ -395,24 +398,49 @@ export class AdminService {
     async getDashboardStats(adminId?: string) {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
 
-        const [studentCount, teacherCount, parentCount, classCount] = await Promise.all([
-            this.studentRepository.count({ where: schoolName ? { school: schoolName } : {} }),
-            this.teacherRepository.count({ where: schoolName ? { school: schoolName } : {} }),
-            this.parentRepository.count({ 
-                where: schoolName ? { children: { school: schoolName } } : {} 
-            }),
-            this.classRepository.count({ where: schoolName ? { school: schoolName } : {} }),
-        ]);
+        let studentCount = 0;
+        let teacherCount = 0;
+        let parentCount = 0;
+        let classCount = 0;
 
-        const recentUsers = await this.userRepository.find({
-            where: schoolName ? [
-                { student: { school: schoolName } },
-                { teacher: { school: schoolName } }
-            ] : {},
-            order: { createdAt: 'DESC' },
-            take: 5,
-            relations: ['student', 'teacher']
-        });
+        try {
+            [studentCount, teacherCount, parentCount, classCount] = await Promise.all([
+                this.studentRepository.count({ where: schoolName ? { school: schoolName } : {} }),
+                this.teacherRepository.count({ where: schoolName ? { school: schoolName } : {} }),
+                this.parentRepository.count({ 
+                    where: schoolName ? { children: { school: schoolName } } : {} 
+                }),
+                this.classRepository.count({ where: schoolName ? { school: schoolName } : {} }),
+            ]);
+        } catch (err) {
+            console.error('[AdminService] getDashboardStats counts failed:', err.message);
+            // Fallback to total counts if school filter fails (likely due to missing column)
+            [studentCount, teacherCount, parentCount, classCount] = await Promise.all([
+                this.studentRepository.count().catch(() => 0),
+                this.teacherRepository.count().catch(() => 0),
+                this.parentRepository.count().catch(() => 0),
+                this.classRepository.count().catch(() => 0),
+            ]);
+        }
+
+        let recentUsers: User[] = [];
+        try {
+            recentUsers = await this.userRepository.find({
+                where: schoolName ? [
+                    { student: { school: schoolName } },
+                    { teacher: { school: schoolName } }
+                ] : {},
+                order: { createdAt: 'DESC' },
+                take: 5,
+                relations: ['student', 'teacher']
+            });
+        } catch (err) {
+            console.error('[AdminService] getDashboardStats recent users failed:', err.message);
+            recentUsers = await this.userRepository.find({
+                order: { createdAt: 'DESC' },
+                take: 5
+            });
+        }
 
         const recentActivities = recentUsers.map(user => ({
             action: `New ${user.userType.toLowerCase()} registered`,
