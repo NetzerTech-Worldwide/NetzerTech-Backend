@@ -110,10 +110,19 @@ export class AdminService {
 
     async getTeachers(adminId?: string): Promise<AdminTeacherDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
-        const teachers = await this.teacherRepository.find({
-            where: schoolName ? { school: schoolName } : {},
-            relations: ['user', 'classes']
-        });
+        let teachers: Teacher[] = [];
+        
+        try {
+            teachers = await this.teacherRepository.find({
+                where: schoolName ? { school: schoolName } : {},
+                relations: ['user', 'classes']
+            });
+        } catch (err) {
+            console.error('[AdminService] getTeachers failed with school filter:', err.message);
+            teachers = await this.teacherRepository.find({
+                relations: ['user', 'classes']
+            });
+        }
 
         // We assume subjects might be linked via classes or a separate entity.
         // For now, we aggregate class titles as subjects/classes.
