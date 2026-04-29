@@ -136,7 +136,7 @@ export class FinanceService {
       relations: ['student', 'bill', 'bill.items', 'payments'],
     });
 
-    const formattedPayments = [];
+    const formattedPayments: any[] = [];
 
     for (const sb of studentBills) {
       const total = sb.bill.items.reduce((sum, item) => sum + Number(item.amount), 0);

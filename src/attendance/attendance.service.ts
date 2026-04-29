@@ -333,7 +333,7 @@ export class AttendanceService {
 
             results.push({
                 id: student.studentId || student.id,
-                name: student.user.fullName,
+                name: student.fullName,
                 class: student.classes.length > 0 ? student.classes[0].title : 'N/A',
                 totalDays: total,
                 present,
@@ -365,9 +365,9 @@ export class AttendanceService {
             id: r.id,
             type: 'leave_request',
             category: 'Leave Requests',
-            title: `Leave Request: ${r.student.user.fullName}`,
+            title: `Leave Request: ${r.student.fullName}`,
             description: r.reason,
-            submittedBy: r.student.user.fullName,
+            submittedBy: r.student.fullName,
             submittedDate: r.createdAt.toISOString().split('T')[0],
             session: '2025/2026', // Placeholder
             term: 'Second Term', // Placeholder
@@ -391,12 +391,12 @@ export class AttendanceService {
 
         if (!request) throw new NotFoundException('Leave request not found');
 
-        const admin = await this.userRepository.findOne({ where: { id: adminUserId } });
+        const admin = await this.dataSource.getRepository(Admin).findOne({ where: { user: { id: adminUserId } } });
+        if (!admin) throw new NotFoundException('Admin profile not found');
 
-        request.status = dto.status.toLowerCase();
+        request.status = dto.status.toLowerCase() as any;
         request.reviewerComments = dto.adminComments;
         request.reviewedBy = admin;
-        request.reviewedAt = new Date();
 
         return this.leaveRequestRepository.save(request);
     }

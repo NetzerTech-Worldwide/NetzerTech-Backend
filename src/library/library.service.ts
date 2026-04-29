@@ -283,7 +283,7 @@ export class LibraryService {
             order: { createdAt: 'ASC' } 
         });
 
-        const result = [];
+        const result: any[] = [];
         for (const res of reservations) {
             // Find queue position
             const queue = await this.reservationRepository.find({
@@ -299,7 +299,7 @@ export class LibraryService {
                 order: { dueDate: 'ASC' }
             });
 
-            let estAvailableDate = null;
+            let estAvailableDate: Date | null = null;
             if (activeLoans.length > 0) {
                 // Base it off the earliest due date, plus queue position padding
                 const baseDate = new Date(activeLoans[0].dueDate);

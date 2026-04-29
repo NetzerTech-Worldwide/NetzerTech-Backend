@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Like } from 'typeorm';
 import { User, Student, Parent, Teacher, Admin, Class } from '../entities';
 import { UserRole } from '../common/enums/user-role.enum';
 import { 
@@ -9,7 +9,8 @@ import {
     AdminTeacherDto, 
     AdminParentDto,
     CreateStudentWithParentDto,
-    AdminSystemUserDto
+    AdminSystemUserDto,
+    CreateClassDto
 } from './dto/admin.dto';
 
 @Injectable()
@@ -143,7 +144,7 @@ export class AdminService {
             throw new BadRequestException(`Class with name "${dto.name}" already exists for this school.`);
         }
 
-        let teacher = null;
+        let teacher: Teacher | null = null;
         if (dto.classTeacherId) {
             teacher = await this.teacherRepository.findOne({ where: { id: dto.classTeacherId } });
         }
@@ -179,7 +180,7 @@ export class AdminService {
                 phone: parent.phoneNumber || '',
                 email: parent.user?.email || '',
                 occupation: parent.occupation || 'N/A',
-                address: parent.residentialAddress || 'N/A',
+                address: parent.address || 'N/A',
                 status: parent.user?.isActive ? 'Active' : 'Inactive'
             };
         });
@@ -379,7 +380,7 @@ export class AdminService {
 
             return {
                 id: user.id,
-                name: user.fullName,
+                name: user.admin?.fullName || user.teacher?.fullName || user.email,
                 email: user.email,
                 role: role,
                 department: department,

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Headers, UnauthorizedException, InternalServerErrorException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, UnauthorizedException, InternalServerErrorException, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiHeader, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -14,7 +14,8 @@ import {
     AdminTeacherDto, 
     AdminParentDto,
     CreateStudentWithParentDto,
-    AdminSystemUserDto
+    AdminSystemUserDto,
+    CreateClassDto
 } from './dto/admin.dto';
 
 @ApiTags('admin')

@@ -36,6 +36,15 @@ export class Book {
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 100 })
     lateFineRate: number; // Daily fine rate
 
+    @Column({ nullable: true })
+    shelfLocation: string;
+
+    @Column({ nullable: true })
+    publisher: string;
+
+    @Column({ type: 'int', nullable: true })
+    yearPublished: number;
+
     @Column({ default: true })
     isActive: boolean;
 
