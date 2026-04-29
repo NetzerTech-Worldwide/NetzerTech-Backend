@@ -12,7 +12,6 @@ async function bootstrap() {
   // Configure CORS based on environment
   app.enableCors({
     origin: true,
-    credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Origin',
     optionsSuccessStatus: 204,
