@@ -248,6 +248,7 @@ export class AppModule implements OnModuleInit {
         await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "relationship" varchar`);
         await queryRunner.query(`ALTER TABLE "parents" ADD COLUMN IF NOT EXISTS "email" varchar`);
         await queryRunner.query(`ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "school" varchar`);
+        await queryRunner.query(`ALTER TABLE "classes" ADD COLUMN IF NOT EXISTS "school" varchar`);
         
         console.log('[AutoMigration] Schema check completed successfully');
       } catch (err) {
