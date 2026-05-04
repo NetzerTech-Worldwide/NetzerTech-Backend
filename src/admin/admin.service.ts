@@ -32,7 +32,7 @@ export class AdminService {
         
         if (admin && admin.address) {
             // Extract school name: "NetzerTech High School (Size: 100-500)" -> "NetzerTech High School"
-            return admin.address.split(' (Size:')[0];
+            return admin.address.split(' (Size:')[0].trim();
         }
         
         return 'NetzerTech School'; // Default fallback
@@ -238,7 +238,7 @@ export class AdminService {
                 });
                 if (admin && admin.address) {
                     // Extract school name: "NetzerTech High School (Size: 100-500)" -> "NetzerTech High School"
-                    schoolName = admin.address.split(' (Size:')[0];
+                    schoolName = admin.address.split(' (Size:')[0].trim();
                 }
             }
 
@@ -300,12 +300,29 @@ export class AdminService {
             studentUser = await queryRunner.manager.save(User, studentUser);
 
             // 3. Find Class (Scoped by School)
-            const studentClass = await queryRunner.manager.findOne(Class, { 
-                where: { title: dto.class, school: schoolName } 
+            // We first try to find by ID, then by Title (case-insensitive)
+            let studentClass = await queryRunner.manager.findOne(Class, { 
+                where: { id: dto.class, school: schoolName } 
             });
 
             if (!studentClass) {
-                throw new BadRequestException(`Class "${dto.class}" not found for this school. Please create the class first.`);
+                // Try by Title (case-insensitive)
+                studentClass = await queryRunner.manager.createQueryBuilder(Class, 'class')
+                    .where('LOWER(class.title) = LOWER(:title)', { title: dto.class.trim() })
+                    .andWhere('class.school = :schoolName', { schoolName })
+                    .getOne();
+            }
+
+            // Final fallback: search by title without school scope if scoped search fails
+            if (!studentClass) {
+                studentClass = await queryRunner.manager.findOne(Class, { 
+                    where: { title: dto.class } 
+                });
+            }
+
+            if (!studentClass) {
+                console.error(`[AdminService] Class lookup failed for "${dto.class}" in school "${schoolName}"`);
+                throw new BadRequestException(`Class "${dto.class}" not found. Please ensure the class is created correctly.`);
             }
 
             // Generate unique student ID (Scoped by School)
