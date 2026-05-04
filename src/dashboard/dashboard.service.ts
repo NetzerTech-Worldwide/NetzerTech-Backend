@@ -171,14 +171,14 @@ export class DashboardService {
           location: nextClass.location,
         }
         : null,
-      classActivities: classActivities.map((a) => ({
+      classActivities: (classActivities ?? []).map((a) => ({
         id: a.id,
         title: a.title,
         subject: a.subject,
         dueDate: a.dueDate,
         totalPoints: a.totalPoints,
       })),
-      upcomingTests: upcomingTests.map((t) => ({
+      upcomingTests: (upcomingTests ?? []).map((t) => ({
         id: t.id,
         title: t.title,
         subject: t.subject,
@@ -196,7 +196,7 @@ export class DashboardService {
             : 0,
         }
         : null,
-      reminders: reminders.map((r) => ({
+      reminders: (reminders ?? []).map((r) => ({
         id: r.id,
         title: r.title,
         description: r.description,
@@ -205,7 +205,7 @@ export class DashboardService {
         type: r.type,
         status: r.status,
       })),
-      latestForumTopics: latestForumTopics.map((t) => ({
+      latestForumTopics: (latestForumTopics ?? []).map((t) => ({
         id: t.id,
         title: t.title,
         content: t.content,
@@ -213,7 +213,7 @@ export class DashboardService {
         replies: t.replies,
         createdAt: t.createdAt,
       })),
-      upcomingEvents: upcomingEvents.map((e) => ({
+      upcomingEvents: (upcomingEvents ?? []).map((e) => ({
         id: e.id,
         title: e.title,
         description: e.description,
@@ -413,7 +413,7 @@ export class DashboardService {
       relations: ['students'],
     }).catch(() => []);
 
-    const pendingGrades = classActivities.map((activity) => ({
+    const pendingGrades = (classActivities ?? []).map((activity) => ({
       id: activity.id,
       title: activity.title,
       subject: activity.subject,
@@ -428,7 +428,7 @@ export class DashboardService {
       relations: ['user'],
     }).catch(() => []);
 
-    const formattedActivities = recentActivities.map((activity) => ({
+    const formattedActivities = (recentActivities ?? []).map((activity) => ({
       id: activity.id,
       type: activity.activityType,
       description: activity.description,
@@ -459,7 +459,7 @@ export class DashboardService {
       : { boys: 0, girls: 0 };
 
     return {
-      todayClasses: todayClasses.map((c) => ({
+      todayClasses: (todayClasses ?? []).map((c) => ({
         id: c.id,
         title: c.title,
         subject: c.subject,
@@ -468,14 +468,14 @@ export class DashboardService {
         location: c.location,
         studentCount: c.students?.length || 0,
       })),
-      activeStudents: activeStudents.map((s) => ({
+      activeStudents: (activeStudents ?? []).map((s) => ({
         id: s.id,
         studentId: s.studentId,
         fullName: s.fullName,
         grade: s.grade,
         profilePicture: s.user?.profilePicture,
       })),
-      pendingGrades: pendingGrades.slice(0, 10),
+      pendingGrades: (pendingGrades ?? []).slice(0, 10),
       recentActivities: formattedActivities,
       studentsByGender,
     };
@@ -541,7 +541,7 @@ export class DashboardService {
     });
 
     // Get payment summary
-    const recentPayments = fees
+    const recentPayments = (fees ?? [])
       .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
       .slice(0, 10)
       .map((fee) => ({
