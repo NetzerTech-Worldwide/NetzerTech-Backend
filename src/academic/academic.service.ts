@@ -66,10 +66,18 @@ export class AcademicService {
   ) { }
 
   async getAvailableSubjects(userId?: string): Promise<AvailableSubjectsDto> {
-    const classes = await this.classRepository.find({
-      where: { isActive: true },
-      relations: ['teacher'],
-    });
+    let classes: Class[] = [];
+    try {
+      classes = await this.classRepository.find({
+        where: { isActive: true },
+        relations: ['teacher'],
+      });
+    } catch (err) {
+      this.logger.error(`getAvailableSubjects failed with relations: ${err.message}`);
+      classes = await this.classRepository.find({
+        where: { isActive: true },
+      });
+    }
 
     const subjectMap = new Map<string, string>();
     classes.forEach((cls) => {

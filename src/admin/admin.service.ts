@@ -48,10 +48,17 @@ export class AdminService {
             });
         } catch (err) {
             console.error('[AdminService] getClassesOverview failed with teacher relation:', err.message);
-            classes = await this.classRepository.find({ 
-                where: schoolName ? { school: schoolName } : {},
-                relations: ['students', 'students.user'] 
-            });
+            try {
+                classes = await this.classRepository.find({ 
+                    where: schoolName ? { school: schoolName } : {},
+                    relations: ['students', 'students.user'] 
+                });
+            } catch (err2) {
+                console.error('[AdminService] getClassesOverview failed with school filter:', err2.message);
+                classes = await this.classRepository.find({ 
+                    relations: ['students', 'students.user'] 
+                });
+            }
         }
         const results: AdminClassOverviewDto[] = [];
 
@@ -88,10 +95,22 @@ export class AdminService {
 
     async getStudents(adminId?: string): Promise<AdminStudentDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
-        const students = await this.studentRepository.find({
-            where: schoolName ? { school: schoolName } : {},
-            relations: ['user', 'parent', 'parent.user', 'classes']
-        });
+        let students: Student[] = [];
+        try {
+            students = await this.studentRepository.find({
+                where: schoolName ? { school: schoolName } : {},
+                relations: ['user', 'parent', 'parent.user', 'classes']
+            });
+        } catch (err) {
+            console.error('[AdminService] getStudents failed with school filter or relations:', err.message);
+            try {
+                students = await this.studentRepository.find({
+                    relations: ['user', 'classes']
+                });
+            } catch (err2) {
+                students = await this.studentRepository.find();
+            }
+        }
 
         return students.map(student => {
             const currentClass = student.classes && student.classes.length > 0 ? student.classes[0].title : 'Unassigned';
