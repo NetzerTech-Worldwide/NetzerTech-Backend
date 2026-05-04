@@ -76,7 +76,7 @@ export class AcademicService {
       this.logger.error(`getAvailableSubjects failed with relations: ${err.message}`);
       classes = await this.classRepository.find({
         where: { isActive: true },
-      });
+      }).catch(() => []);
     }
 
     const subjectMap = new Map<string, string>();
@@ -98,7 +98,7 @@ export class AcademicService {
         const registrations = await this.registrationRepository.find({
           where: { student: { id: user.student.id } },
           relations: ['class'],
-        });
+        }).catch(() => []);
 
         // Get unique subjects from registrations
         registeredSubjects = new Set(registrations.map((reg) => reg.subject));
@@ -151,7 +151,7 @@ export class AcademicService {
       .leftJoin('class.students', 'student')
       .where('student.id = :studentId', { studentId: student.id })
       .andWhere('class.isActive = :isActive', { isActive: true })
-      .getMany();
+      .getMany().catch(() => []);
 
     // Group by subject and get unique subjects with their type and teacher
     const subjectMap = new Map<string, { type: string; teacherName: string }>();
@@ -590,7 +590,7 @@ export class AcademicService {
       .where('class.id IN (:...classIds)', { classIds })
       .andWhere('session.status IN (:...statuses)', { statuses: [LiveSessionStatus.SCHEDULED, LiveSessionStatus.LIVE] })
       .orderBy('session.startTime', 'ASC')
-      .getMany();
+      .getMany().catch(() => []);
 
     const now = new Date();
 
@@ -1215,7 +1215,7 @@ export class AcademicService {
       query.andWhere('submission.status = :status', { status: AssignmentStatus.SUBMITTED });
     }
 
-    const assignments = await query.orderBy('assignment.dueDate', 'ASC').getMany();
+    const assignments = await query.orderBy('assignment.dueDate', 'ASC').getMany().catch(() => []);
 
     return assignments.map((a) => ({
       id: a.id,
@@ -1591,7 +1591,7 @@ export class AcademicService {
 
     query.orderBy('activity.dueDate', 'ASC');
 
-    const activities = await query.getMany();
+    const activities = await query.getMany().catch(() => []);
 
     return activities.map(activity => {
       const submission = activity.submissions && activity.submissions.length > 0 ? activity.submissions[0] : null;

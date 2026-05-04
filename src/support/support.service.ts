@@ -41,7 +41,7 @@ export class SupportService {
             query.andWhere('faq.category = :category', { category });
         }
 
-        return query.orderBy('faq.sortOrder', 'ASC').getMany();
+        return query.orderBy('faq.sortOrder', 'ASC').getMany().catch(() => []);
     }
 
     async createFaq(dto: CreateFaqDto): Promise<Faq> {
@@ -78,9 +78,9 @@ export class SupportService {
         }
 
         return this.ticketRepository.find({
-            where,
-            order: { createdAt: 'DESC' },
-        });
+            where: { user: { id: userId } },
+            order: { createdAt: 'DESC' }
+        }).catch(() => []);
     }
 
     async getTicketById(userId: string, identifier: string): Promise<SupportTicket> {

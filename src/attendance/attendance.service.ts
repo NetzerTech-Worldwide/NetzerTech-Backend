@@ -169,7 +169,7 @@ export class AttendanceService {
         const totalRecords = await queryBuilder.getCount();
 
         queryBuilder.skip((query.page - 1) * query.limit).take(query.limit);
-        const records = await queryBuilder.getMany();
+        const records = await queryBuilder.getMany().catch(() => []);
 
         return {
             meta: {
@@ -225,7 +225,7 @@ export class AttendanceService {
 
         query.orderBy('lr.createdAt', 'DESC');
 
-        const requests = await query.getMany();
+        const requests = await query.getMany().catch(() => []);
 
         return requests.map(r => ({
             id: r.id,
@@ -317,7 +317,7 @@ export class AttendanceService {
             studentsQuery.andWhere('class.title = :className', { className });
         }
 
-        const students = await studentsQuery.getMany();
+        const students = await studentsQuery.getMany().catch(() => []);
         const results: AdminStudentAttendanceDto[] = [];
 
         for (const student of students) {
@@ -359,7 +359,7 @@ export class AttendanceService {
 
         query.orderBy('lr.createdAt', 'DESC');
 
-        const requests = await query.getMany();
+        const requests = await query.getMany().catch(() => []);
 
         return requests.map(r => ({
             id: r.id,

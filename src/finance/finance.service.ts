@@ -37,7 +37,7 @@ export class FinanceService {
       query.andWhere('bill.term = :term', { term });
     }
 
-    const bills = await query.getMany();
+    const bills = await query.getMany().catch(() => []);
 
     return bills.map(bill => {
       const total = bill.items.reduce((sum, item) => sum + Number(item.amount), 0);
@@ -95,7 +95,7 @@ export class FinanceService {
     let students: Student[] = [];
     if (data.targetType === 'student') {
       if (data.isUniversal) {
-        students = await this.studentRepo.find();
+        students = await this.studentRepo.find().catch(() => []);
       } else if (data.targetClass) {
         const targetClass = await this.classRepo.findOne({
           where: { title: data.targetClass },
@@ -134,7 +134,7 @@ export class FinanceService {
   async getPayments() {
     const studentBills = await this.studentBillRepo.find({
       relations: ['student', 'bill', 'bill.items', 'payments'],
-    });
+    }).catch(() => []);
 
     const formattedPayments: any[] = [];
 
@@ -222,7 +222,7 @@ export class FinanceService {
 
   async getRevenue() {
     // Aggregate payments by month and breakdown by source
-    const payments = await this.paymentRepo.find({ relations: ['studentBill', 'studentBill.bill', 'studentBill.bill.items'] });
+    const payments = await this.paymentRepo.find({ relations: ['studentBill', 'studentBill.bill', 'studentBill.bill.items'] }).catch(() => []);
 
     // Monthly revenue logic
     // Just a basic implementation for now

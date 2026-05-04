@@ -107,7 +107,7 @@ export class DashboardService {
       .andWhere('classActivity.isCompleted = :isCompleted', { isCompleted: false })
       .orderBy('classActivity.dueDate', 'ASC')
       .limit(10)
-      .getMany();
+      .getMany().catch(() => []);
 
     // Get upcoming tests
     const upcomingTests = await this.testRepository
@@ -117,7 +117,7 @@ export class DashboardService {
       .andWhere('test.testDate > :now', { now })
       .orderBy('test.testDate', 'ASC')
       .limit(10)
-      .getMany();
+      .getMany().catch(() => []);
 
     // Get academic progress
     const academicProgress = await this.academicProgressRepository.findOne({
@@ -133,13 +133,13 @@ export class DashboardService {
       },
       order: { dueDate: 'ASC' },
       take: 10,
-    });
+    }).catch(() => []);
 
     // Get latest forum topics
     const latestForumTopics = await this.forumTopicRepository.find({
       order: { createdAt: 'DESC' },
       take: 5,
-    });
+    }).catch(() => []);
 
     // Get upcoming events
     const upcomingEvents = await this.eventRepository.find({
@@ -150,7 +150,7 @@ export class DashboardService {
       },
       order: { eventDate: 'ASC' },
       take: 10,
-    });
+    }).catch(() => []);
 
     const result = {
       profile: {
@@ -261,7 +261,7 @@ export class DashboardService {
       .andWhere('classActivity.isCompleted = :isCompleted', { isCompleted: false })
       .orderBy('classActivity.dueDate', 'ASC')
       .limit(10)
-      .getMany();
+      .getMany().catch(() => []);
 
     // Get academic progress with CGPA
     const academicProgress = await this.academicProgressRepository.findOne({
@@ -277,13 +277,13 @@ export class DashboardService {
       },
       order: { dueDate: 'ASC' },
       take: 10,
-    });
+    }).catch(() => []);
 
     // Get latest forum topics
     const latestForumTopics = await this.forumTopicRepository.find({
       order: { createdAt: 'DESC' },
       take: 5,
-    });
+    }).catch(() => []);
 
     // Get upcoming events
     const upcomingEvents = await this.eventRepository.find({
@@ -294,7 +294,7 @@ export class DashboardService {
       },
       order: { eventDate: 'ASC' },
       take: 10,
-    });
+    }).catch(() => []);
 
     return {
       nextClass: nextClass
@@ -382,7 +382,7 @@ export class DashboardService {
       },
       relations: ['students'],
       order: { startTime: 'ASC' },
-    });
+    }).catch(() => []);
 
     const activeStudentIds = await this.classRepository
       .createQueryBuilder('class')
@@ -391,14 +391,17 @@ export class DashboardService {
       .where('class.teacher = :teacherId', { teacherId: teacher.id })
       .andWhere('class.isActive = :isActive', { isActive: true })
       .getRawMany()
-      .then((results) => results.map((r) => r.studentId).filter((id) => id));
+      .then((results) => {
+        const rows = Array.isArray(results) ? results : [];
+        return rows.map((r) => r.studentId).filter((id) => id != null);
+      });
 
     const activeStudents = activeStudentIds.length > 0
       ? await this.studentRepository.find({
         where: { id: In(activeStudentIds) },
         relations: ['user'],
         take: 20,
-      })
+      }).catch(() => [])
       : [];
 
     // Get pending grades (class activities with ungraded submissions)
@@ -408,7 +411,7 @@ export class DashboardService {
         dueDate: LessThanOrEqual(now),
       },
       relations: ['students'],
-    });
+    }).catch(() => []);
 
     const pendingGrades = classActivities.map((activity) => ({
       id: activity.id,
@@ -423,7 +426,7 @@ export class DashboardService {
       order: { createdAt: 'DESC' },
       take: 10,
       relations: ['user'],
-    });
+    }).catch(() => []);
 
     const formattedActivities = recentActivities.map((activity) => ({
       id: activity.id,
@@ -511,23 +514,23 @@ export class DashboardService {
     // Get attendance
     const attendances = await this.attendanceRepository.find({
       where: { student: { id: student.id } },
-    });
+    }).catch(() => []);
 
     const totalDays = attendances.length;
-    const presentDays = attendances.filter((a) => a.status === AttendanceStatus.PRESENT).length;
-    const absentDays = attendances.filter((a) => a.status === AttendanceStatus.ABSENT).length;
-    const lateDays = attendances.filter((a) => a.status === AttendanceStatus.LATE).length;
+    const presentDays = (attendances ?? []).filter((a) => a.status === AttendanceStatus.PRESENT).length;
+    const absentDays = (attendances ?? []).filter((a) => a.status === AttendanceStatus.ABSENT).length;
+    const lateDays = (attendances ?? []).filter((a) => a.status === AttendanceStatus.LATE).length;
     const attendancePercentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
 
     // Get fees
     const fees = await this.feeRepository.find({
       where: { student: { id: student.id } },
-    });
+    }).catch(() => []);
 
-    const totalFee = fees.reduce((sum, fee) => sum + Number(fee.amount), 0);
-    const paidFee = fees.filter((f) => f.status === 'paid').reduce((sum, fee) => sum + Number(fee.amount), 0);
-    const pendingFee = fees.filter((f) => f.status === 'pending').reduce((sum, fee) => sum + Number(fee.amount), 0);
-    const overdueFee = fees.filter((f) => f.status === 'overdue').reduce((sum, fee) => sum + Number(fee.amount), 0);
+    const totalFee = (fees ?? []).reduce((sum, fee) => sum + Number(fee.amount), 0);
+    const paidFee = (fees ?? []).filter((f) => f.status === 'paid').reduce((sum, fee) => sum + Number(fee.amount), 0);
+    const pendingFee = (fees ?? []).filter((f) => f.status === 'pending').reduce((sum, fee) => sum + Number(fee.amount), 0);
+    const overdueFee = (fees ?? []).filter((f) => f.status === 'overdue').reduce((sum, fee) => sum + Number(fee.amount), 0);
 
     // Get unread messages
     const unreadMessages = await this.messageRepository.count({
@@ -582,4 +585,3 @@ export class DashboardService {
     };
   }
 }
-
