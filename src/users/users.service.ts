@@ -26,7 +26,7 @@ export class UsersService {
       });
     } catch (err) {
       console.error('[UsersService] findAll failed with relations:', err.message);
-      return this.userRepository.find();
+      return this.userRepository.find().catch(() => []);
     }
   }
   
@@ -57,7 +57,7 @@ export class UsersService {
       });
     } catch (err) {
       console.error('[UsersService] findByRole failed with relations:', err.message);
-      return this.userRepository.find({ where: { userType } });
+      return this.userRepository.find({ where: { userType } }).catch(() => []);
     }
   }
 

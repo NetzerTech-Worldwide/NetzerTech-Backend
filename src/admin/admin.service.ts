@@ -149,7 +149,7 @@ export class AdminService {
             console.error('[AdminService] getTeachers failed with school filter:', err.message);
             teachers = await this.teacherRepository.find({
                 relations: ['user', 'classes']
-            });
+            }).catch(() => []);
         }
 
         // We assume subjects might be linked via classes or a separate entity.
@@ -202,10 +202,25 @@ export class AdminService {
 
     async getParents(adminId?: string): Promise<AdminParentDto[]> {
         const schoolName = adminId ? await this.getAdminSchoolName(adminId) : null;
-        const parents = await this.parentRepository.find({
-            where: schoolName ? { children: { school: schoolName } } : {},
-            relations: ['user', 'children']
-        });
+        let parents: Parent[] = [];
+        try {
+            parents = await this.parentRepository.find({
+                where: schoolName ? { children: { school: schoolName } } : {},
+                relations: ['user', 'children']
+            });
+        } catch (err) {
+            console.error('[AdminService] getParents failed with school filter:', err.message);
+            try {
+                parents = await this.parentRepository.find({
+                    relations: ['user', 'children']
+                });
+            } catch (err2) {
+                console.error('[AdminService] getParents failed with relations fallback:', err2.message);
+                parents = await this.parentRepository.find({
+                    relations: ['user']
+                }).catch(() => []);
+            }
+        }
 
         return parents.map(parent => {
             const childrenNames = parent.children ? parent.children.map(c => c.fullName).join(', ') : 'None';
@@ -422,7 +437,7 @@ export class AdminService {
                     { userType: UserRole.ADMIN },
                     { userType: UserRole.TEACHER }
                 ]
-            });
+            }).catch(() => []);
         }
 
         return users.map(user => {
