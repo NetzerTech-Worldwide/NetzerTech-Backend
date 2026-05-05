@@ -25,10 +25,10 @@ export class Parent {
   @Column({ nullable: true })
   address: string;
 
-  @Column({ nullable: true, select: false })
+  @Column({ nullable: true })
   relationship: string;
 
-  @Column({ nullable: true, select: false })
+  @Column({ nullable: true })
   email: string;
 
   @Column({ nullable: true })

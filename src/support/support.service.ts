@@ -78,8 +78,8 @@ export class SupportService {
         }
 
         return this.ticketRepository.find({
-            where: { user: { id: userId } },
-            order: { createdAt: 'DESC' }
+            where,
+            order: { createdAt: 'DESC' },
         }).catch(() => []);
     }
 
