@@ -514,7 +514,7 @@ export class DashboardService {
     // Get attendance
     const attendances = await this.attendanceRepository.find({
       where: { student: { id: student.id } },
-    }).catch(() => []);
+    }).catch(() => [] as Attendance[]);
 
     const totalDays = attendances.length;
     const presentDays = (attendances ?? []).filter((a) => a.status === AttendanceStatus.PRESENT).length;
@@ -525,7 +525,7 @@ export class DashboardService {
     // Get fees
     const fees = await this.feeRepository.find({
       where: { student: { id: student.id } },
-    }).catch(() => []);
+    }).catch(() => [] as Fee[]);
 
     const totalFee = (fees ?? []).reduce((sum, fee) => sum + Number(fee.amount), 0);
     const paidFee = (fees ?? []).filter((f) => f.status === 'paid').reduce((sum, fee) => sum + Number(fee.amount), 0);

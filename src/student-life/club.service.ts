@@ -277,7 +277,7 @@ export class ClubService {
             members: memberships.map(m => ({
                 name: m.student.fullName,
                 credits: m.creditsEarned,
-                className: m.student.gradeLevel || 'Unknown', // Need to resolve class accurately in production
+                className: m.student.grade || 'Unknown', // Need to resolve class accurately in production
                 role: m.role
             }))
         };

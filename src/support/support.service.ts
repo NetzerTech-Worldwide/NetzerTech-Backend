@@ -62,10 +62,10 @@ export class SupportService {
             category: dto.category as any,
             subject: dto.subject,
             description: dto.description,
-            attachmentUrl: dto.attachmentUrl || null,
+            attachmentUrl: dto.attachmentUrl || undefined,
         });
 
-        return this.ticketRepository.save(ticket);
+        return this.ticketRepository.save(ticket as any) as Promise<SupportTicket>;
     }
 
     async getTickets(userId: string, status?: string): Promise<SupportTicket[]> {

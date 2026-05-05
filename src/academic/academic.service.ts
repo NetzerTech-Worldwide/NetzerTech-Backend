@@ -151,7 +151,7 @@ export class AcademicService {
       .leftJoin('class.students', 'student')
       .where('student.id = :studentId', { studentId: student.id })
       .andWhere('class.isActive = :isActive', { isActive: true })
-      .getMany().catch(() => []);
+      .getMany().catch(() => [] as Class[]);
 
     // Group by subject and get unique subjects with their type and teacher
     const subjectMap = new Map<string, { type: string; teacherName: string }>();

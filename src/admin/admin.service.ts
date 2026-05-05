@@ -192,13 +192,13 @@ export class AdminService {
             gradeLevel: dto.level,
             location: dto.room,
             school: schoolName,
-            teacher: teacher,
+            teacher: teacher || undefined,
             subject: 'General', // Default subject
             startTime: new Date(),
             endTime: new Date(),
         });
 
-        return this.classRepository.save(newClass);
+        return this.classRepository.save(newClass as any) as Promise<Class>;
     }
 
     async getParents(adminId?: string): Promise<AdminParentDto[]> {
@@ -461,11 +461,13 @@ export class AdminService {
             return {
                 id: user.id,
                 email: user.email,
-                fullName: user.teacher?.fullName || user.admin?.fullName || 'System User',
+                name: user.teacher?.fullName || user.admin?.fullName || 'System User',
                 role,
                 department,
                 status: user.isActive ? 'Active' : 'Inactive',
-                lastLogin: user.lastLoginAt ? this.formatTimeAgo(user.lastLoginAt) : 'Never'
+                lastLogin: user.lastLoginAt ? this.formatTimeAgo(user.lastLoginAt) : 'Never',
+                createdDate: user.createdAt ? user.createdAt.toISOString() : new Date().toISOString(),
+                permissions: []
             };
         });
     }

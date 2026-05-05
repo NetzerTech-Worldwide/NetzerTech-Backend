@@ -49,7 +49,7 @@ export class TimetableService {
             .leftJoin('class.students', 'student')
             .where('student.id = :studentId', { studentId })
             .andWhere('class.isActive = :isActive', { isActive: true })
-            .getMany().catch(() => []);
+            .getMany().catch(() => [] as Class[]);
 
         // 2. Fetch standard isolated LiveSessions
         const liveSessions = await this.liveSessionRepository
@@ -60,7 +60,7 @@ export class TimetableService {
             .where('student.id = :studentId', { studentId })
             .andWhere('session.startTime >= :startOfDay', { startOfDay })
             .andWhere('session.startTime <= :endOfDay', { endOfDay })
-            .getMany().catch(() => []);
+            .getMany().catch(() => [] as LiveSession[]);
 
         const events: TimetableEventDto[] = [];
 

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { User, Student, Attendance, LeaveRequest, AttendanceStatus, Class } from '../entities';
+import { User, Student, Attendance, LeaveRequest, AttendanceStatus, Class, Admin } from '../entities';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AttendanceOverviewDto, CreateLeaveRequestDto, UpdateLeaveRequestDto, AdminClassAttendanceDto, AdminStudentAttendanceDto } from './dto/attendance.dto';
@@ -395,7 +395,7 @@ export class AttendanceService {
         if (!admin) throw new NotFoundException('Admin profile not found');
 
         request.status = dto.status.toLowerCase() as any;
-        request.reviewerComments = dto.adminComments;
+        request.reviewerComments = dto.adminComments || '';
         request.reviewedBy = admin;
 
         return this.leaveRequestRepository.save(request);

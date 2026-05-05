@@ -106,12 +106,12 @@ export class LibraryService {
             availableCopies: dto.copies,
             shelfLocation: dto.shelfLocation,
             publisher: dto.publisher,
-            yearPublished: dto.yearPublished,
+            yearPublished: dto.yearPublished ? Number(dto.yearPublished) : undefined,
             isActive: true,
             rating: 0
         });
 
-        return this.bookRepository.save(book);
+        return this.bookRepository.save(book as any) as Promise<Book>;
     }
 
     // --- Borrowing Operations ---
