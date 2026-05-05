@@ -36,7 +36,7 @@ export class AdminService {
             return admin.address.split(' (Size:')[0].trim();
         }
         
-        return 'NetzerTech School'; // Default fallback
+        throw new BadRequestException('Admin school configuration not found. Please ensure your school profile is properly set up.');
     }
 
     async getClassesOverview(adminId?: string): Promise<AdminClassOverviewDto[]> {
@@ -245,8 +245,7 @@ export class AdminService {
         await queryRunner.startTransaction();
 
         try {
-            // Get Admin's school name if adminId is provided
-            let schoolName = 'NetzerTech School';
+            let schoolName: string;
             if (adminId) {
                 const admin = await queryRunner.manager.findOne(Admin, { 
                     where: { user: { id: adminId } },
@@ -255,7 +254,11 @@ export class AdminService {
                 if (admin && admin.address) {
                     // Extract school name: "NetzerTech High School (Size: 100-500)" -> "NetzerTech High School"
                     schoolName = admin.address.split(' (Size:')[0].trim();
+                } else {
+                    throw new BadRequestException('Admin school profile not found.');
                 }
+            } else {
+                throw new BadRequestException('Admin ID is required to determine the school.');
             }
 
             // 1. Handle Parent User
