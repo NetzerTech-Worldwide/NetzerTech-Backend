@@ -40,7 +40,9 @@ export class FinanceService {
     const bills = await query.getMany().catch(() => []);
 
     return bills.map(bill => {
-      const total = bill.items.reduce((sum, item) => sum + Number(item.amount), 0);
+      const items = bill.items ?? [];
+      const studentBills = bill.studentBills ?? [];
+      const total = items.reduce((sum, item) => sum + Number(item.amount), 0);
       const computedVAT = Math.round(total * (Number(bill.vatPercent) / 100));
       const grandTotal = total + Number(bill.bankCharges) + computedVAT;
 
@@ -52,7 +54,7 @@ export class FinanceService {
         targetClass: bill.targetClass,
         targetType: bill.targetType,
         isUniversal: bill.isUniversal,
-        items: bill.items,
+        items,
         total,
         bankCharges: Number(bill.bankCharges),
         vat: computedVAT,
@@ -60,9 +62,9 @@ export class FinanceService {
         status: bill.status,
         createdDate: bill.createdAt,
         publishedDate: bill.publishedDate,
-        studentsCount: bill.studentBills.length,
-        paidCount: bill.studentBills.filter(sb => sb.status === StudentBillStatus.PAID).length,
-        partialCount: bill.studentBills.filter(sb => sb.status === StudentBillStatus.PARTIAL).length,
+        studentsCount: studentBills.length,
+        paidCount: studentBills.filter(sb => sb.status === StudentBillStatus.PAID).length,
+        partialCount: studentBills.filter(sb => sb.status === StudentBillStatus.PARTIAL).length,
       };
     });
   }

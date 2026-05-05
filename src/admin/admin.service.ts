@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { User, Student, Parent, Teacher, Admin, Class } from '../entities';
 import { UserRole } from '../common/enums/user-role.enum';
 import { 
@@ -283,8 +284,9 @@ export class AdminService {
                 // Create NEW Parent User
                 parentUser = this.userRepository.create({
                     email: dto.parentEmail,
-                    password: 'defaultPassword123!', // Should be hashed in a real app
-                    userType: UserRole.PARENT
+                    password: await bcrypt.hash('defaultPassword123!', 10),
+                    userType: UserRole.PARENT,
+                    mustChangePassword: true,
                 });
                 parentUser = await queryRunner.manager.save(User, parentUser);
 
@@ -309,8 +311,9 @@ export class AdminService {
 
             let studentUser = this.userRepository.create({
                 email: studentEmail,
-                password: 'defaultPassword123!',
-                userType: UserRole.SECONDARY_STUDENT
+                password: await bcrypt.hash('defaultPassword123!', 10),
+                userType: UserRole.SECONDARY_STUDENT,
+                mustChangePassword: true,
             });
             studentUser = await queryRunner.manager.save(User, studentUser);
 

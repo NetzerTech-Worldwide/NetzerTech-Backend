@@ -427,6 +427,7 @@ export class DatabaseSeeder {
         department: 'Mathematics',
         phoneNumber: '+1234567891',
         address: '456 Teacher Avenue',
+        school: 'NetzerTech High School',
         user: savedUser,
       });
 
@@ -562,6 +563,7 @@ export class DatabaseSeeder {
           endTime: new Date(new Date().setHours(10, 0, 0, 0)),
           location: 'Room 5',
           isActive: true,
+          school: 'NetzerTech High School',
           teacher,
           students: [savedStudent]
         });
@@ -575,6 +577,7 @@ export class DatabaseSeeder {
           endTime: new Date(new Date().setHours(12, 0, 0, 0)),
           location: 'Lab 2',
           isActive: true,
+          school: 'NetzerTech High School',
           teacher,
           students: [savedStudent]
         });
@@ -588,6 +591,7 @@ export class DatabaseSeeder {
           endTime: new Date(new Date().setHours(14, 0, 0, 0)),
           location: 'Room 2',
           isActive: true,
+          school: 'NetzerTech High School',
           teacher,
           students: [savedStudent]
         });
