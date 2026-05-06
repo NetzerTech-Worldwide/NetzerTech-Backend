@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, In } from 'typeorm';
+import { Repository, DataSource, Like, In, IsNull } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, Student, Parent, Teacher, Admin, Class, Event, Announcement, TimetablePeriod, ExamTimetable } from '../entities';
 import { UserRole } from '../common/enums/user-role.enum';
@@ -189,7 +189,7 @@ export class AdminService {
         const schoolName = await this.getAdminSchoolName(adminId);
         
         const existingClass = await this.classRepository.findOne({
-            where: { title: dto.name, school: schoolName }
+            where: { title: dto.name, school: schoolName ? schoolName : IsNull() }
         });
 
         if (existingClass) {
@@ -205,7 +205,7 @@ export class AdminService {
             title: dto.name,
             gradeLevel: dto.level,
             location: dto.room,
-            school: schoolName,
+            school: schoolName || undefined,
             teacher: teacher || undefined,
             subject: 'General', // Default subject
             startTime: new Date(),
@@ -337,7 +337,7 @@ export class AdminService {
             // 3. Find Class (Scoped by School)
             // We first try to find by ID, then by Title (case-insensitive)
             let studentClass = await queryRunner.manager.findOne(Class, { 
-                where: { id: dto.class, school: schoolName } 
+                where: { id: dto.class, school: schoolName ? schoolName : IsNull() } 
             });
 
             if (!studentClass) {
@@ -366,7 +366,7 @@ export class AdminService {
             if (dto.studentId) {
                 // Use provided ID if it's unique FOR THIS SCHOOL
                 const existing = await queryRunner.manager.findOne(Student, { 
-                    where: { studentId: dto.studentId, school: schoolName } 
+                    where: { studentId: dto.studentId, school: schoolName ? schoolName : IsNull() } 
                 });
                 if (existing) {
                     throw new Error(`Student ID ${dto.studentId} is already in use at your school.`);
@@ -398,7 +398,7 @@ export class AdminService {
                 while (!isUnique) {
                     studentId = `${prefix}${sequence.toString().padStart(3, '0')}`;
                     const existing = await queryRunner.manager.findOne(Student, { 
-                        where: { studentId, school: schoolName } 
+                        where: { studentId, school: schoolName ? schoolName : IsNull() } 
                     });
                     if (!existing) {
                         isUnique = true;
@@ -415,7 +415,7 @@ export class AdminService {
                 dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
                 parent: parent,
                 user: studentUser,
-                school: schoolName, // SAVE WITH SCHOOL NAME
+                school: schoolName || undefined, // SAVE WITH SCHOOL NAME
                 classes: studentClass ? [studentClass] : [],
                 admissionDate: new Date()
             });
