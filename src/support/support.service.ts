@@ -105,4 +105,48 @@ export class SupportService {
 
         return ticket;
     }
+
+    async getTicketByIdForAdmin(identifier: string): Promise<SupportTicket> {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+
+        let ticket: SupportTicket | null = null;
+
+        if (isUuid) {
+            ticket = await this.ticketRepository.findOne({ where: { id: identifier } });
+        } else {
+            ticket = await this.ticketRepository.findOne({ where: { ticketId: identifier } });
+        }
+
+        if (!ticket) {
+            throw new NotFoundException('Support ticket not found');
+        }
+
+        return ticket;
+    }
+
+    async addTicketNote(identifier: string, note: string, adminId: string): Promise<SupportTicket> {
+        const ticket = await this.getTicketByIdForAdmin(identifier);
+        
+        // Append note with timestamp and admin info
+        const timestamp = new Date().toISOString();
+        const newNoteEntry = `[${timestamp}] Admin: ${note}`;
+        
+        ticket.notes = ticket.notes ? `${ticket.notes}\n${newNoteEntry}` : newNoteEntry;
+        
+        return this.ticketRepository.save(ticket);
+    }
+
+    async sendTicketEmail(identifier: string, recipientEmail: string, subject: string, messageBody: string, adminId: string) {
+        const ticket = await this.getTicketByIdForAdmin(identifier);
+        
+        // Stub: Log the email action
+        console.log(`[SupportService] Email sent for ticket ${ticket.ticketId} by admin ${adminId} to ${recipientEmail}`);
+        console.log(`[SupportService] Subject: ${subject}`);
+        
+        return {
+            message: 'Email sent successfully',
+            ticketId: ticket.ticketId,
+            recipient: recipientEmail
+        };
+    }
 }

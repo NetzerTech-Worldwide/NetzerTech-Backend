@@ -2,6 +2,9 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SupportService } from './support.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import {
     CreateSupportTicketDto,
@@ -10,6 +13,7 @@ import {
     HelpCategoryDto,
     CreateFaqDto,
 } from './dto/support.dto';
+import { AddTicketNoteDto, SendTicketEmailDto } from '../admin/dto/admin.dto';
 
 @ApiTags('Support')
 @Controller('support')
@@ -40,6 +44,8 @@ export class SupportController {
     }
 
     @Post('faqs')
+    @UseGuards(RolesGuard)
+    @Roles(UserRole.ADMIN)
     @ApiOperation({ summary: 'Add a new FAQ (Admin only)' })
     @ApiResponse({ status: 201, description: 'FAQ created successfully', type: FaqResponseDto })
     async createFaq(@Body() dto: CreateFaqDto) {
@@ -79,5 +85,33 @@ export class SupportController {
         @Param('id') id: string,
     ) {
         return this.supportService.getTicketById(req.user.id, id);
+    }
+
+    // --- Add Ticket Note (Admin) ---
+    @Post('tickets/:id/notes')
+    @UseGuards(RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiOperation({ summary: 'Add a note to a support ticket (Admin only)' })
+    @ApiResponse({ status: 201, description: 'Note added successfully' })
+    async addTicketNote(
+        @Request() req: AuthenticatedRequest,
+        @Param('id') id: string,
+        @Body() dto: AddTicketNoteDto,
+    ) {
+        return this.supportService.addTicketNote(id, dto.note, req.user.id);
+    }
+
+    // --- Send Ticket Email (Admin) ---
+    @Post('tickets/:id/email')
+    @UseGuards(RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiOperation({ summary: 'Send an email regarding a support ticket (Admin only)' })
+    @ApiResponse({ status: 201, description: 'Email sent successfully' })
+    async sendTicketEmail(
+        @Request() req: AuthenticatedRequest,
+        @Param('id') id: string,
+        @Body() dto: SendTicketEmailDto,
+    ) {
+        return this.supportService.sendTicketEmail(id, dto.recipientEmail, dto.subject, dto.messageBody, req.user.id);
     }
 }

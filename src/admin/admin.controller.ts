@@ -15,7 +15,15 @@ import {
     AdminParentDto,
     CreateStudentWithParentDto,
     AdminSystemUserDto,
-    CreateClassDto
+    CreateClassDto,
+    CreateTeacherDto,
+    CreateSystemUserDto,
+    CreateParentDto,
+    CreateAnnouncementDto,
+    CreateEventDto,
+    CreateTimetablePeriodDto,
+    CreateExamTimetableDto,
+    SendIdCardsToVendorDto,
 } from './dto/admin.dto';
 
 @ApiTags('admin')
@@ -98,6 +106,16 @@ export class AdminController {
       return this.adminService.getTeachers(req.user.id);
   }
 
+  @Post('teachers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new teacher' })
+  @ApiResponse({ status: 201, description: 'Teacher created successfully' })
+  async createTeacher(@Request() req, @Body() dto: CreateTeacherDto) {
+      return this.adminService.createTeacher(dto, req.user.id);
+  }
+
   @Get('parents')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -106,6 +124,16 @@ export class AdminController {
   @ApiResponse({ status: 200, type: [AdminParentDto] })
   async getParents(@Request() req) {
       return this.adminService.getParents(req.user.id);
+  }
+
+  @Post('parents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new parent' })
+  @ApiResponse({ status: 201, description: 'Parent created successfully' })
+  async createParent(@Request() req, @Body() dto: CreateParentDto) {
+      return this.adminService.createParent(dto, req.user.id);
   }
 
   @Get('system-users')
@@ -118,6 +146,16 @@ export class AdminController {
       return this.adminService.getSystemUsers(req.user.id);
   }
 
+  @Post('system-users')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new system user (admin/staff)' })
+  @ApiResponse({ status: 201, description: 'System user created successfully' })
+  async createSystemUser(@Request() req, @Body() dto: CreateSystemUserDto) {
+      return this.adminService.createSystemUser(dto, req.user.id);
+  }
+
   @Get('dashboard-stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -125,5 +163,55 @@ export class AdminController {
   @ApiOperation({ summary: 'Get dashboard statistics' })
   async getDashboardStats(@Request() req) {
       return this.adminService.getDashboardStats(req.user.id);
+  }
+
+  @Post('announcements')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new announcement' })
+  @ApiResponse({ status: 201, description: 'Announcement created successfully' })
+  async createAnnouncement(@Request() req, @Body() dto: CreateAnnouncementDto) {
+      return this.adminService.createAnnouncement(dto, req.user.id);
+  }
+
+  @Post('events')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new school event' })
+  @ApiResponse({ status: 201, description: 'Event created successfully' })
+  async createEvent(@Request() req, @Body() dto: CreateEventDto) {
+      return this.adminService.createEvent(dto, req.user.id);
+  }
+
+  @Post('timetable/periods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a timetable period' })
+  @ApiResponse({ status: 201, description: 'Timetable period created successfully' })
+  async createTimetablePeriod(@Request() req, @Body() dto: CreateTimetablePeriodDto) {
+      return this.adminService.createTimetablePeriod(dto, req.user.id);
+  }
+
+  @Post('examinations/timetable')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create an examination timetable entry' })
+  @ApiResponse({ status: 201, description: 'Examination timetable created successfully' })
+  async createExamTimetable(@Request() req, @Body() dto: CreateExamTimetableDto) {
+      return this.adminService.createExamTimetable(dto, req.user.id);
+  }
+
+  @Post('id-cards/send-to-vendor')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Send ID card order to vendor' })
+  @ApiResponse({ status: 201, description: 'ID card order sent successfully' })
+  async sendIdCardsToVendor(@Request() req, @Body() dto: SendIdCardsToVendorDto) {
+      return this.adminService.sendIdCardsToVendor(dto, req.user.id);
   }
 }

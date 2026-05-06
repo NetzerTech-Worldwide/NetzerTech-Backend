@@ -37,6 +37,9 @@ export class SupportTicket {
     @Column({ nullable: true })
     attachmentUrl: string;
 
+    @Column({ type: 'text', nullable: true })
+    notes: string;
+
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
     user: User;
 

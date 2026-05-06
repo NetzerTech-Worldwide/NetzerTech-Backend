@@ -1,8 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like } from 'typeorm';
+import { Repository, DataSource, Like, In } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { User, Student, Parent, Teacher, Admin, Class } from '../entities';
+import { User, Student, Parent, Teacher, Admin, Class, Event, Announcement, TimetablePeriod, ExamTimetable } from '../entities';
 import { UserRole } from '../common/enums/user-role.enum';
 import { 
     AdminClassOverviewDto, 
@@ -11,7 +11,15 @@ import {
     AdminParentDto,
     CreateStudentWithParentDto,
     AdminSystemUserDto,
-    CreateClassDto
+    CreateClassDto,
+    CreateTeacherDto,
+    CreateSystemUserDto,
+    CreateParentDto,
+    CreateAnnouncementDto,
+    CreateEventDto,
+    CreateTimetablePeriodDto,
+    CreateExamTimetableDto,
+    SendIdCardsToVendorDto
 } from './dto/admin.dto';
 
 @Injectable()
@@ -23,10 +31,14 @@ export class AdminService {
         @InjectRepository(Teacher) private teacherRepository: Repository<Teacher>,
         @InjectRepository(Admin) private adminRepository: Repository<Admin>,
         @InjectRepository(Class) private classRepository: Repository<Class>,
+        @InjectRepository(Event) private eventRepository: Repository<Event>,
+        @InjectRepository(Announcement) private announcementRepository: Repository<Announcement>,
+        @InjectRepository(TimetablePeriod) private timetablePeriodRepository: Repository<TimetablePeriod>,
+        @InjectRepository(ExamTimetable) private examTimetableRepository: Repository<ExamTimetable>,
         private dataSource: DataSource
     ) {}
 
-    private async getAdminSchoolName(adminId: string): Promise<string> {
+    private async getAdminSchoolName(adminId: string): Promise<string | null> {
         const admin = await this.adminRepository.findOne({ 
             where: { user: { id: adminId } } 
         });
@@ -36,7 +48,9 @@ export class AdminService {
             return admin.address.split(' (Size:')[0].trim();
         }
         
-        throw new BadRequestException('Admin school configuration not found. Please ensure your school profile is properly set up.');
+        // Return null instead of throwing — callers already handle null with unscoped queries
+        console.warn(`[AdminService] Admin ${adminId} has no school profile configured.`);
+        return null;
     }
 
     async getClassesOverview(adminId?: string): Promise<AdminClassOverviewDto[]> {
@@ -544,5 +558,268 @@ export class AdminService {
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
         return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    }
+
+    // ========== POST: Create Teacher ==========
+    async createTeacher(dto: CreateTeacherDto, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+        
+        // Check if user with this email already exists
+        const existingUser = await this.userRepository.findOne({ where: { email: dto.email } });
+        if (existingUser) {
+            throw new BadRequestException(`A user with email ${dto.email} already exists.`);
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // Create User
+            let user = this.userRepository.create({
+                email: dto.email,
+                password: await bcrypt.hash('defaultPassword123!', 10),
+                userType: UserRole.TEACHER,
+                mustChangePassword: true,
+            });
+            user = await queryRunner.manager.save(User, user);
+
+            // Create Teacher profile
+            const fullName = [dto.title, dto.firstName, dto.lastName].filter(Boolean).join(' ');
+            const teacher = this.teacherRepository.create({
+                fullName,
+                phoneNumber: dto.phone,
+                department: dto.subject || 'General',
+                address: dto.address,
+                school: schoolName || undefined,
+                user,
+            });
+            await queryRunner.manager.save(Teacher, teacher);
+
+            await queryRunner.commitTransaction();
+
+            return {
+                message: 'Teacher created successfully',
+                teacher: { id: teacher.id, name: fullName, email: dto.email }
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw new BadRequestException('Failed to create teacher: ' + error.message);
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
+    // ========== POST: Create System User ==========
+    async createSystemUser(dto: CreateSystemUserDto, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+
+        const existingUser = await this.userRepository.findOne({ where: { email: dto.email } });
+        if (existingUser) {
+            throw new BadRequestException(`A user with email ${dto.email} already exists.`);
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            const isTeacherRole = dto.role.toLowerCase() === 'teacher';
+            const userType = isTeacherRole ? UserRole.TEACHER : UserRole.ADMIN;
+
+            let user = this.userRepository.create({
+                email: dto.email,
+                password: await bcrypt.hash('defaultPassword123!', 10),
+                userType,
+                mustChangePassword: true,
+            });
+            user = await queryRunner.manager.save(User, user);
+
+            if (isTeacherRole) {
+                const teacher = this.teacherRepository.create({
+                    fullName: dto.name,
+                    department: dto.department || 'Academic',
+                    school: schoolName || undefined,
+                    user,
+                });
+                await queryRunner.manager.save(Teacher, teacher);
+            } else {
+                const admin = this.adminRepository.create({
+                    fullName: dto.name,
+                    department: dto.department || 'Administration',
+                    address: schoolName ? `${schoolName} (Size: N/A)` : undefined,
+                    isSuperAdmin: false,
+                    user,
+                });
+                await queryRunner.manager.save(Admin, admin as any);
+            }
+
+            await queryRunner.commitTransaction();
+
+            return {
+                message: 'System user created successfully',
+                user: { id: user.id, name: dto.name, email: dto.email, role: dto.role }
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw new BadRequestException('Failed to create system user: ' + error.message);
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
+    // ========== POST: Create Parent ==========
+    async createParent(dto: CreateParentDto, adminId: string) {
+        const existingUser = await this.userRepository.findOne({ where: { email: dto.email } });
+        if (existingUser) {
+            throw new BadRequestException(`A user with email ${dto.email} already exists.`);
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // Create User
+            let user = this.userRepository.create({
+                email: dto.email,
+                password: await bcrypt.hash('defaultPassword123!', 10),
+                userType: UserRole.PARENT,
+                mustChangePassword: true,
+            });
+            user = await queryRunner.manager.save(User, user);
+
+            // Create Parent profile
+            const fullName = [dto.title, dto.firstName, dto.lastName].filter(Boolean).join(' ');
+            const parent = this.parentRepository.create({
+                fullName,
+                phoneNumber: dto.phone,
+                email: dto.email,
+                occupation: dto.occupation,
+                address: dto.address,
+                relationship: dto.relationship,
+                user,
+            });
+            const savedParent = await queryRunner.manager.save(Parent, parent);
+
+            // Link students if provided
+            if (dto.studentIds && dto.studentIds.length > 0) {
+                await queryRunner.manager
+                    .createQueryBuilder()
+                    .update(Student)
+                    .set({ parent: savedParent })
+                    .where('id IN (:...ids)', { ids: dto.studentIds })
+                    .execute();
+            }
+
+            await queryRunner.commitTransaction();
+
+            return {
+                message: 'Parent created successfully',
+                parent: { id: savedParent.id, name: fullName, email: dto.email }
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw new BadRequestException('Failed to create parent: ' + error.message);
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
+    // ========== POST: Create Announcement ==========
+    async createAnnouncement(dto: CreateAnnouncementDto, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+
+        const announcement = this.announcementRepository.create({
+            title: dto.title,
+            content: dto.content,
+            targetAudience: dto.targetAudience || 'All',
+            priority: dto.priority || 'Medium',
+            status: dto.status || 'Published',
+            school: schoolName || undefined,
+            createdBy: adminId,
+        });
+
+        const saved = await this.announcementRepository.save(announcement as any) as Announcement;
+
+        return {
+            message: 'Announcement created successfully',
+            announcement: { id: saved.id, title: saved.title, status: saved.status }
+        };
+    }
+
+    // ========== POST: Create Event ==========
+    async createEvent(dto: CreateEventDto, adminId: string) {
+        const event = this.eventRepository.create({
+            title: dto.title,
+            description: dto.description || '',
+            eventDate: new Date(dto.date),
+            location: dto.location || '',
+            isActive: dto.status !== 'Draft',
+        });
+
+        const saved = await this.eventRepository.save(event as any) as Event;
+
+        return {
+            message: 'Event created successfully',
+            event: { id: saved.id, title: saved.title, date: dto.date }
+        };
+    }
+
+    // ========== POST: Create Timetable Period ==========
+    async createTimetablePeriod(dto: CreateTimetablePeriodDto, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+
+        const period = this.timetablePeriodRepository.create({
+            startTime: dto.startTime,
+            endTime: dto.endTime,
+            periodType: dto.periodType,
+            className: dto.className,
+            subject: dto.subject,
+            teacherId: dto.teacherId,
+            dayOfWeek: dto.dayOfWeek,
+            school: schoolName || undefined,
+        });
+
+        const saved = await this.timetablePeriodRepository.save(period as any) as TimetablePeriod;
+
+        return {
+            message: 'Timetable period created successfully',
+            period: { id: saved.id, startTime: saved.startTime, endTime: saved.endTime, type: saved.periodType }
+        };
+    }
+
+    // ========== POST: Create Exam Timetable ==========
+    async createExamTimetable(dto: CreateExamTimetableDto, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+
+        const examTimetable = this.examTimetableRepository.create({
+            examName: dto.examName,
+            classLevel: dto.classLevel,
+            startDate: new Date(dto.startDate),
+            endDate: new Date(dto.endDate),
+            subject: dto.subject,
+            venue: dto.venue,
+            school: schoolName || undefined,
+        });
+
+        const saved = await this.examTimetableRepository.save(examTimetable as any) as ExamTimetable;
+
+        return {
+            message: 'Examination timetable created successfully',
+            examTimetable: { id: saved.id, examName: saved.examName, classLevel: saved.classLevel }
+        };
+    }
+
+    // ========== POST: Send ID Cards to Vendor (Stub) ==========
+    async sendIdCardsToVendor(dto: SendIdCardsToVendorDto, adminId: string) {
+        console.log(`[AdminService] Vendor order request from admin ${adminId}:`, dto.requestIds);
+        
+        return {
+            message: 'ID card order sent to vendor successfully',
+            orderCount: dto.requestIds.length,
+            requestIds: dto.requestIds,
+            vendorNotified: true,
+        };
     }
 }

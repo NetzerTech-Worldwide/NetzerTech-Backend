@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
-import { User, Student, Parent, Teacher, Admin, Class } from '../entities';
+import { User, Student, Parent, Teacher, Admin, Class, Event, Announcement, TimetablePeriod, ExamTimetable } from '../entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Student, Parent, Teacher, Admin, Class])],
+  imports: [TypeOrmModule.forFeature([User, Student, Parent, Teacher, Admin, Class, Event, Announcement, TimetablePeriod, ExamTimetable])],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],

@@ -41,3 +41,6 @@ export * from './bill.entity';
 export * from './bill-item.entity';
 export * from './student-bill.entity';
 export * from './payment.entity';
+export { Announcement } from './announcement.entity';
+export { TimetablePeriod } from './timetable-period.entity';
+export { ExamTimetable } from './exam-timetable.entity';
