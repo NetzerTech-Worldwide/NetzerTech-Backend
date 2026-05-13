@@ -387,10 +387,9 @@ export class AdminService {
                 const currentYear = new Date().getFullYear();
                 const prefix = `STU${currentYear}`;
                 
-                // Find the latest student ID for THIS SCHOOL with this prefix
+                // Find the latest student ID ACROSS ALL SCHOOLS with this prefix
                 const latestStudent = await queryRunner.manager.createQueryBuilder(Student, 'student')
                     .where('student.studentId LIKE :prefix', { prefix: `${prefix}%` })
-                    .andWhere('student.school = :schoolName', { schoolName })
                     .orderBy('student.studentId', 'DESC')
                     .getOne();
 
@@ -403,12 +402,12 @@ export class AdminService {
                     }
                 }
 
-                // Ensure it's unique by checking and incrementing if needed (safety net)
+                // Ensure it's unique globally by checking and incrementing if needed
                 let isUnique = false;
                 while (!isUnique) {
                     studentId = `${prefix}${sequence.toString().padStart(3, '0')}`;
                     const existing = await queryRunner.manager.findOne(Student, { 
-                        where: { studentId, school: schoolName ? schoolName : IsNull() } 
+                        where: { studentId } 
                     });
                     if (!existing) {
                         isUnique = true;
