@@ -341,9 +341,14 @@ export class AdminService {
 
             // 3. Find Class (Scoped by School)
             // We first try to find by ID, then by Title (case-insensitive)
-            let studentClass = await queryRunner.manager.findOne(Class, { 
-                where: { id: dto.class, school: schoolName ? schoolName : IsNull() } 
-            });
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(dto.class);
+            let studentClass = null;
+            
+            if (isUuid) {
+                studentClass = await queryRunner.manager.findOne(Class, { 
+                    where: { id: dto.class, school: schoolName ? schoolName : IsNull() } 
+                });
+            }
 
             if (!studentClass) {
                 // Try by Title (case-insensitive)
