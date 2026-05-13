@@ -95,6 +95,7 @@ export class AdminService {
             }
 
             results.push({
+                id: cls.id,
                 name: cls.title,
                 classTeacher: cls.teacher ? cls.teacher.fullName : 'Unassigned',
                 totalStudents: students.length,
@@ -188,12 +189,16 @@ export class AdminService {
     async createClass(dto: CreateClassDto, adminId: string): Promise<Class> {
         const schoolName = await this.getAdminSchoolName(adminId);
         
+        // Compute the canonical class name from level + section
+        const section = (dto.section || '').toUpperCase().trim();
+        const computedName = section ? `${dto.level} ${section}` : dto.name || dto.level;
+        
         const existingClass = await this.classRepository.findOne({
-            where: { title: dto.name, school: schoolName ? schoolName : IsNull() }
+            where: { title: computedName, school: schoolName ? schoolName : IsNull() }
         });
 
         if (existingClass) {
-            throw new BadRequestException(`Class with name "${dto.name}" already exists for this school.`);
+            throw new BadRequestException(`Class with name "${computedName}" already exists for this school.`);
         }
 
         let teacher: Teacher | null = null;
@@ -202,7 +207,7 @@ export class AdminService {
         }
 
         const newClass = this.classRepository.create({
-            title: dto.name,
+            title: computedName,
             gradeLevel: dto.level,
             location: dto.room,
             school: schoolName || undefined,

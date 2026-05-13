@@ -3,6 +3,9 @@ import { IsString, IsEmail, IsOptional, IsNotEmpty, IsArray, IsEnum } from 'clas
 
 export class AdminClassOverviewDto {
     @ApiProperty()
+    id: string;
+
+    @ApiProperty()
     name: string;
 
     @ApiProperty()
