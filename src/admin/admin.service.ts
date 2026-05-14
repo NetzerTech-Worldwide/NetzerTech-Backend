@@ -821,6 +821,106 @@ export class AdminService {
     }
 
     // ========== POST: Send ID Cards to Vendor (Stub) ==========
+    // ========== GET: Details ==========
+    async getStudentDetail(id: string, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+        const student = await this.studentRepository.findOne({
+            where: [
+                { id: id, school: schoolName ? schoolName : undefined },
+                { studentId: id, school: schoolName ? schoolName : undefined }
+            ],
+            relations: ['user', 'parent', 'parent.user', 'classes']
+        });
+
+        if (!student) {
+            throw new BadRequestException('Student not found');
+        }
+
+        // Calculate age
+        let age = 0;
+        if (student.dateOfBirth) {
+            const diff = Date.now() - new Date(student.dateOfBirth).getTime();
+            age = Math.abs(new Date(diff).getUTCFullYear() - 1970);
+        }
+
+        return {
+            id: student.studentId || student.id,
+            name: student.fullName,
+            class: student.classes && student.classes.length > 0 ? student.classes[0].title : 'Unassigned',
+            gender: student.gender || 'N/A',
+            age: age || 0,
+            dob: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : 'N/A',
+            admission: student.admissionDate ? new Date(student.admissionDate).toISOString().split('T')[0] : 'N/A',
+            email: student.user?.email || '',
+            phone: student.phoneNumber || '',
+            address: student.residentialAddress || 'N/A',
+            status: student.user?.isActive ? 'Active' : 'Suspended',
+            parent: student.parent ? student.parent.fullName : 'N/A',
+            parentPhone: student.parent ? student.parent.phoneNumber : 'N/A',
+            parentEmail: student.parent?.user?.email || 'N/A',
+            attendance: {
+                present: 85,
+                absent: 10,
+                late: 5,
+                total: 100
+            },
+            subjects: [
+                { name: "Mathematics", score: 85, grade: "A" },
+                { name: "English", score: 72, grade: "B" },
+                { name: "Science", score: 91, grade: "A" }
+            ],
+            fees: {
+                total: 450000,
+                paid: 350000,
+                balance: 100000
+            }
+        };
+    }
+
+    async getTeacherDetail(id: string, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+        const teacher = await this.teacherRepository.findOne({
+            where: [
+                { id: id, school: schoolName ? schoolName : undefined },
+                { employeeId: id, school: schoolName ? schoolName : undefined }
+            ],
+            relations: ['user', 'classes']
+        });
+
+        if (!teacher) {
+            throw new BadRequestException('Teacher not found');
+        }
+
+        const assignedClasses = teacher.classes ? teacher.classes.map(c => c.title) : [];
+
+        return {
+            id: teacher.employeeId || teacher.id,
+            name: teacher.fullName,
+            email: teacher.user?.email || '',
+            phone: teacher.phoneNumber || '',
+            gender: 'N/A',
+            dob: 'N/A',
+            address: teacher.address || 'N/A',
+            qualification: 'B.Ed',
+            experience: '5 years',
+            joinDate: teacher.createdAt ? teacher.createdAt.toISOString().split('T')[0] : 'N/A',
+            subject: teacher.department || 'N/A',
+            status: teacher.user?.isActive ? 'Active' : 'Inactive',
+            classes: assignedClasses,
+            totalStudents: 120,
+            performance: {
+                passRate: 92,
+                avgStudentScore: 78,
+                classesPerWeek: 15
+            },
+            schedule: [
+                { day: "Monday", time: "08:00 AM - 09:30 AM", class: assignedClasses[0] || "N/A", topic: "Intro to Subject" },
+                { day: "Tuesday", time: "10:00 AM - 11:30 AM", class: assignedClasses[1] || "N/A", topic: "Advanced Topics" }
+            ]
+        };
+    }
+
+    // ========== POST: Send ID Cards to Vendor (Stub) ==========
     async sendIdCardsToVendor(dto: SendIdCardsToVendorDto, adminId: string) {
         console.log(`[AdminService] Vendor order request from admin ${adminId}:`, dto.requestIds);
         
