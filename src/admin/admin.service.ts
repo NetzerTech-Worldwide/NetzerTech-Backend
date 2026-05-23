@@ -920,6 +920,127 @@ export class AdminService {
         };
     }
 
+    // ========== PATCH: Update Student ==========
+    async updateStudent(id: string, dto: any, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+        
+        // Find by UUID or studentId
+        let student = await this.studentRepository.findOne({
+            where: { id: id, school: schoolName ? schoolName : undefined },
+            relations: ['user', 'classes']
+        });
+        if (!student) {
+            student = await this.studentRepository.findOne({
+                where: { studentId: id, school: schoolName ? schoolName : undefined },
+                relations: ['user', 'classes']
+            });
+        }
+
+        if (!student) {
+            throw new BadRequestException('Student not found');
+        }
+
+        // Update student fields
+        if (dto.firstName || dto.lastName) {
+            student.fullName = `${dto.firstName || ''} ${dto.lastName || ''}`.trim();
+        }
+        if (dto.gender) student.gender = dto.gender;
+        if (dto.dateOfBirth) student.dateOfBirth = new Date(dto.dateOfBirth);
+        if (dto.phone) student.phoneNumber = dto.phone;
+        if (dto.address) student.residentialAddress = dto.address;
+
+        await this.studentRepository.save(student);
+
+        // Update user email/status if provided
+        if (student.user) {
+            if (dto.email) student.user.email = dto.email;
+            if (dto.status) {
+                student.user.isActive = dto.status === 'Active';
+            }
+            await this.userRepository.save(student.user);
+        }
+
+        // Update class assignment if provided
+        if (dto.class) {
+            const classEntity = await this.classRepository.findOne({
+                where: { title: dto.class, school: schoolName ? schoolName : undefined }
+            });
+            if (classEntity) {
+                // Use query builder for many-to-many
+                await this.dataSource
+                    .createQueryBuilder()
+                    .relation(Student, 'classes')
+                    .of(student)
+                    .addAndRemove([classEntity.id], student.classes?.map(c => c.id) || []);
+            }
+        }
+
+        return { message: 'Student updated successfully' };
+    }
+
+    // ========== PATCH: Update Teacher ==========
+    async updateTeacher(id: string, dto: any, adminId: string) {
+        const schoolName = await this.getAdminSchoolName(adminId);
+
+        // Find by UUID or employeeId
+        let teacher = await this.teacherRepository.findOne({
+            where: { id: id, school: schoolName ? schoolName : undefined },
+            relations: ['user', 'classes']
+        });
+        if (!teacher) {
+            teacher = await this.teacherRepository.findOne({
+                where: { employeeId: id, school: schoolName ? schoolName : undefined },
+                relations: ['user', 'classes']
+            });
+        }
+
+        if (!teacher) {
+            throw new BadRequestException('Teacher not found');
+        }
+
+        // Update teacher fields
+        if (dto.firstName || dto.lastName) {
+            const title = dto.title || '';
+            teacher.fullName = `${title} ${dto.firstName || ''} ${dto.lastName || ''}`.trim();
+        }
+        if (dto.subject) teacher.department = dto.subject;
+        if (dto.phone) teacher.phoneNumber = dto.phone;
+        if (dto.address) teacher.address = dto.address;
+
+        await this.teacherRepository.save(teacher);
+
+        // Update user email/status if provided
+        if (teacher.user) {
+            if (dto.email) teacher.user.email = dto.email;
+            if (dto.status) {
+                teacher.user.isActive = dto.status === 'Active';
+            }
+            await this.userRepository.save(teacher.user);
+        }
+
+        // Update class assignments if provided
+        if (dto.classes && Array.isArray(dto.classes)) {
+            const classEntities = await this.classRepository.find({
+                where: { title: In(dto.classes), school: schoolName ? schoolName : undefined }
+            });
+            if (classEntities.length > 0) {
+                // Update each class to point to this teacher
+                for (const cls of classEntities) {
+                    cls.teacher = teacher;
+                    await this.classRepository.save(cls);
+                }
+                // Remove teacher from classes not in the new list
+                const oldClasses = teacher.classes?.filter(c => !dto.classes.includes(c.title)) || [];
+                for (const cls of oldClasses) {
+                    cls.teacher = null as any;
+                    await this.classRepository.save(cls);
+                }
+            }
+        }
+
+        return { message: 'Teacher updated successfully' };
+    }
+
     // ========== POST: Send ID Cards to Vendor (Stub) ==========
     async sendIdCardsToVendor(dto: SendIdCardsToVendorDto, adminId: string) {
         console.log(`[AdminService] Vendor order request from admin ${adminId}:`, dto.requestIds);

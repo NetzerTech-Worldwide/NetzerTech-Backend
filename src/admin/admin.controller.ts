@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Headers, UnauthorizedException, InternalServerErrorException, UseGuards, Request, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Headers, UnauthorizedException, InternalServerErrorException, UseGuards, Request, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiHeader, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -96,6 +96,16 @@ export class AdminController {
       return this.adminService.getStudentDetail(id, req.user.id);
   }
 
+  @Patch('students/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update a student' })
+  @ApiResponse({ status: 200, description: 'Student updated successfully' })
+  async updateStudent(@Request() req, @Param('id') id: string, @Body() dto: any) {
+      return this.adminService.updateStudent(id, dto, req.user.id);
+  }
+
   @Post('students')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -122,6 +132,16 @@ export class AdminController {
   @ApiOperation({ summary: 'Get a single teacher detail' })
   async getTeacher(@Request() req, @Param('id') id: string) {
       return this.adminService.getTeacherDetail(id, req.user.id);
+  }
+
+  @Patch('teachers/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update a teacher' })
+  @ApiResponse({ status: 200, description: 'Teacher updated successfully' })
+  async updateTeacher(@Request() req, @Param('id') id: string, @Body() dto: any) {
+      return this.adminService.updateTeacher(id, dto, req.user.id);
   }
 
   @Post('teachers')
